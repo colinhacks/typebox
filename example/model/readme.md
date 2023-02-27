@@ -22,7 +22,7 @@ const V = T.Parse({ x: 1, y: 2, z: 3 }) // V is { x: number, y: number, z: numbe
 By design, TypeBox treats type composition from validation as seperate concerns. The reason for this is both to keep the library modular as well as integrators to select specific TypeBox components meaningful to their projects. For example, Fastify users gets good milage from TypeBox `Type` compositor, but not the `TypeCompiler` as Fastify uses Ajv for validation. Seperation of concerns is generally a good thing, but as consequence of keeping schematics and validation concerns seperate, is means TypeBox does not implement validation on types, or express higher-order chainable functions as seen in libraries like Zod, Yup or Joi.
 
 ```typescript
-const s = z.string().parse('hello') // not supported in TypeBox
+const s = z.string().parse('hello') // method chaining not supported in TypeBox
 ```
 
 Composition abstractions vary considerably from library to library; and TypeBox treats such abstractions as a downstream concern for this reason. But to illustrate how one would approach constructing higher-order composition abstractions with TypeBox, the example [model.ts](./model.ts) reimplements the Zod compositor model, and uses TypeBox as a subsystem for inference and validation.
