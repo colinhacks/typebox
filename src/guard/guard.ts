@@ -234,6 +234,11 @@ export namespace TypeGuard {
     )
   }
 
+  /** Returns true if the given schema is TNot */
+  export function TNot(schema: unknown): schema is Types.TNot {
+    return IsObject(schema) && schema[Types.Kind] === 'Not' && schema.allOf.length === 2 && IsObject(schema.allOf[0]) && TSchema(schema.allOf[0].not) && TSchema(schema.allOf[1])
+  }
+
   /** Returns true if the given schema is TNull */
   export function TNull(schema: unknown): schema is Types.TNull {
     return IsObject(schema) && schema[Types.Kind] === 'Null' && schema.type === 'null' && IsOptionalString(schema.$id)
@@ -459,6 +464,7 @@ export namespace TypeGuard {
       TInteger(schema) ||
       TLiteral(schema) ||
       TNever(schema) ||
+      TNot(schema) ||
       TNull(schema) ||
       TNumber(schema) ||
       TObject(schema) ||
