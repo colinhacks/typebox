@@ -27,6 +27,10 @@ const s = z.string().parse('hello') // method chaining not supported in TypeBox
 
 Composition abstractions vary considerably from library to library; and TypeBox treats such abstractions as downstream concerns for this reason. But to illustrate how one would approach constructing higher-order type composition abstractions with TypeBox, the provided example [model.ts](./model.ts) reimplements the Zod compositor model (albiet with Pascal casing), and uses TypeBox as a subsystem for inference and validation.
 
+```typescript
+const S = Type.String().Parse('hello') // supported with `model.ts`
+```
+
 License MIT
 
 - [Example](#Example)
