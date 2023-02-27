@@ -6,17 +6,17 @@ import { Conditional } from '@sinclair/typebox/conditional'
 import { Format } from '@sinclair/typebox/format'
 import { Custom } from '@sinclair/typebox/custom'
 import { Value, ValuePointer } from '@sinclair/typebox/value'
-import { Type, Kind, Static, TSchema } from '@sinclair/typebox'
+// import {  Kind, Static, TSchema } from '@sinclair/typebox'
+
+import { Type, Static } from './model/model'
 
 const T = Type.Object({
-  x: Type.Not(Type.Number(), Type.String(), { default: 'hello' }),
+  x: Type.String().Not(Type.Literal('hello'))
+}).Extend({
+  y: Type.Number().GreaterThan(1)
 })
 
-console.log(Value.Cast(T, { x: 'helloasd' }))
+console.log(T.Schema)
 
-// const C = TypeCompiler.Compile(T)
-// const A = 1
-// const E = [...C.Errors(A)]
 
-// console.log(JSON.stringify(E, null, 2))
-// console.log(C.Check(A))
+
