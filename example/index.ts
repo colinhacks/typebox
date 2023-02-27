@@ -8,12 +8,13 @@ import { Custom } from '@sinclair/typebox/custom'
 import { Value, ValuePointer } from '@sinclair/typebox/value'
 import { Type, Kind, Static, TSchema } from '@sinclair/typebox'
 
-const T = Type.Object({
-  x: Type.Not(Type.Union([Type.Literal('hello'), Type.Literal('world')]), Type.String()),
-})
+const T = Type.Not(
+  Type.Object({
+    x: Type.Undefined(),
+  }),
+  Type.Any(),
+)
 
-console.log('ASD', TypeGuard.TObject(T))
+const C = TypeCompiler.Compile(T)
 
-console.log(Value.Check(T, { x: 'hello' }))
-
-type T = Static<typeof T>
+console.log(C.Check({ x: 1 }))

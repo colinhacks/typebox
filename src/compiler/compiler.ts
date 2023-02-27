@@ -198,6 +198,12 @@ export namespace TypeCompiler {
     yield `(false)`
   }
 
+  function* Not(schema: Types.TNot, value: string): IterableIterator<string> {
+    const left = CreateExpression(schema.allOf[0].not, value)
+    const right = CreateExpression(schema.allOf[1], value)
+    yield `(!${left} && ${right})`
+  }
+
   function* Null(schema: Types.TNull, value: string): IterableIterator<string> {
     yield `(${value} === null)`
   }
@@ -372,6 +378,8 @@ export namespace TypeCompiler {
         return yield* Literal(anySchema, value)
       case 'Never':
         return yield* Never(anySchema, value)
+      case 'Not':
+        return yield* Not(anySchema, value)
       case 'Null':
         return yield* Null(anySchema, value)
       case 'Number':
