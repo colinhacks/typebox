@@ -4,11 +4,11 @@ Using TypeBox as a Subsystem for Higher Order Composition
 
 ## Overview
 
-As a core design principle, TypeBox seperates type composition from validation logic. The reasoning for this to enable integrators to select only the TypeBox components meaningful to their respective projects. For example, the Fastify framework gets good value from TypeBox's type compositor, but internally uses Ajv for validation (where embedding the TypeBox compiler in the presense of Ajv doesn't make sense). A direct consequence of seperating schematic composition and validation however, is TypeBox cannot provide built in validation on types, or express higher-order type composition as seen in libraries like Zod.
+By design, TypeBox seperates type composition from validation logic. The reason for this to allow integrators to select only the TypeBox components meaningful to their respective projects. For example, the Fastify framework sees good use from TypeBox type composition, but internally uses Ajv for validation (so embedding the TypeBox compiler doesn't make sense). However, a direct consequence of keeping schematic and validation seperate, is TypeBox cannot provide built in validation for types, or express higher-order type composition as seen in libraries like Zod.
 
-Higher-order composition is possible with TypeBox, but as developers tend to preference one compositor over another (preferencing Zod over Yup or vice versa), TypeBox interprets this as a down level concern. But to illustrate higher-order composition of TypeBox types, this example script re-implements the Zod type compositor using TypeBox as a subsystem for inference and validation.
+Higher-order composition is possible with TypeBox, but as such abstractions are vary considerably from library to library, TypeBox such abstractions as a down stream concern. To illustrate how one would approach higher-order composition abstractions with TypeBox, this example script re-implements the Zod type compositor model using TypeBox as a subsystem for inference and validation.
 
-Integrators can use this example as a reference point for building their own Zod, Yup, Joi like API's, but backed by JSON Schema and the TypeBox compiler.
+Integrators can use this example as a reference for building their own Zod-like libraries, while getting the benefits of being based on the JSON Schema specification, as well as being able to leverage TypeBox's high performance validation infrastructure.
 
 License MIT
 
