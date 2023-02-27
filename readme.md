@@ -341,7 +341,7 @@ The following table lists the Standard TypeBox types.
 │     Type.Literal('z')          │                             │         { const: 'x' },        │
 │   ]),                          │ type T = Not<               │         { const: 'y' },        │
 │   Type.String()                │   'x' | 'y' | 'z',          │         { const: 'z' }         │
-│ )                              │   number                    │       ]                        │       
+│ )                              │   string                    │       ]                        │       
 │                                │ >                           │     }                          │     
 │                                │                             │   }, {                         │      
 │                                │                             │     type: 'string'             │
