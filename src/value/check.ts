@@ -136,9 +136,11 @@ export namespace ValueCheck {
   function Never(schema: Types.TNever, references: Types.TSchema[], value: any): boolean {
     return false
   }
+
   function Not(schema: Types.TNot, references: Types.TSchema[], value: any): boolean {
     return !Visit(schema.allOf[0].not, references, value) && Visit(schema.allOf[1], references, value)
   }
+
   function Null(schema: Types.TNull, references: Types.TSchema[], value: any): boolean {
     return value === null
   }

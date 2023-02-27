@@ -57,6 +57,7 @@ export enum ValueErrorType {
   IntegerMaximum,
   Literal,
   Never,
+  Not,
   Null,
   Number,
   NumberMultipleOf,
@@ -205,6 +206,13 @@ export namespace ValueErrors {
 
   function* Never(schema: Types.TNever, references: Types.TSchema[], path: string, value: any): IterableIterator<ValueError> {
     yield { type: ValueErrorType.Never, schema, path, value, message: `Value cannot be validated` }
+  }
+
+  function* Not(schema: Types.TNot, references: Types.TSchema[], path: string, value: any): IterableIterator<ValueError> {
+    if (Visit(schema.allOf[0].not, references, path, value).next().done === true) {
+      yield { type: ValueErrorType.Not, schema, path, value, message: `Value should not validate` }
+    }
+    yield* Visit(schema.allOf[1], references, path, value)
   }
 
   function* Null(schema: Types.TNull, references: Types.TSchema[], path: string, value: any): IterableIterator<ValueError> {
@@ -449,6 +457,8 @@ export namespace ValueErrors {
         return yield* Literal(anySchema, anyReferences, path, value)
       case 'Never':
         return yield* Never(anySchema, anyReferences, path, value)
+      case 'Not':
+        return yield* Not(anySchema, anyReferences, path, value)
       case 'Null':
         return yield* Null(anySchema, anyReferences, path, value)
       case 'Number':
