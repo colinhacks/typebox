@@ -2,6 +2,20 @@
 
 Using TypeBox as a Subsystem for Higher Order Composition
 
+## Example
+
+```typescript
+import { Type } from './model'
+
+const T = Type.Object({
+    x: Type.Number(),
+    y: Type.Number(),
+    z: Type.Number()
+}).Strict().Compile()
+
+const V = T.Parse({ x: 1, y: 2, z: 3 }) // V is { x: number, y: number, z: number }
+```
+
 ## Overview
 
 By design, TypeBox seperates type composition from validation logic. The reason for this to allow integrators to select only the TypeBox components meaningful to their projects. For example, the Fastify framework gets good milage from TypeBox schema composition, but internally uses Ajv for validation (so embedding the TypeBox compiler doesn't make sense). However, a consequence of TypeBox keeping schematic and validation logic seperate, is it cannot provide built in validation on types, or express higher-order type composition abstractions as seen in libraries like Zod (by default)
@@ -12,6 +26,7 @@ Integrators can use this example as a reference for building their own Zod-like,
 
 License MIT
 
+- [Example](#Example)
 - [Overview](#Overview)
 - [Subsystem](#Subsystem)
 - [Model](#Model)
