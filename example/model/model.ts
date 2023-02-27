@@ -159,6 +159,10 @@ export class TypeModel<T extends Types.TSchema = Types.TSchema> {
     return compiled as this
   }
 }
+
+// -----------------------------------------------------------------
+// Object
+// -----------------------------------------------------------------
 export class ObjectModel<T extends Types.TObject = Types.TObject> extends TypeModel<T> {
   public And<U extends Types.TObject>(type: IntoModel<U>) {
     return new IntersectModel(Types.Type.Intersect([this.Schema, type.Schema]))
@@ -188,6 +192,9 @@ export class ObjectModel<T extends Types.TObject = Types.TObject> extends TypeMo
   }
 }
 
+// -----------------------------------------------------------------
+// Intersect
+// -----------------------------------------------------------------
 export class IntersectModel<T extends Types.TIntersect> extends ObjectModel<T> {}
 
 // -----------------------------------------------------------------
