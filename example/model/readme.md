@@ -27,7 +27,7 @@ Seperation of concerns is generally a good thing, but as consequence of keeping 
 const s = z.string().parse('hello') // not supported in TypeBox
 ```
 
-Abstractions like the above vary considerably from library to library, and TypeBox treats such abstractions as a downstream concern for this reason. But to illustrate how one would approach higher-order composition abstractions with TypeBox, the example `model.ts` reimplements Zods type compositor using TypeBox as a subsystem for inference and validation. This example can be used as a reference point for implementing higher order abstractions on top of TypeBox. Doing so allows implementors to take advantage TypeBox's high performance validation infrastructure while being aligned to the JSON Schema specification.
+Composition abstractions vary considerably from library to library; and TypeBox treats such abstractions as a downstream concern for this reason. But to illustrate how one would approach constructing higher-order composition abstractions with TypeBox, the example [model.ts](./model.ts) reimplements the Zod compositor model, and uses TypeBox as a subsystem for inference and validation.
 
 License MIT
 
