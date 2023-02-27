@@ -29,9 +29,7 @@ import z from 'zod'
 const s = z.string().parse('hello') // type s = 'string'
 ```
 
-Abstractions like the above vary considerably from library to library, and TypeBox treats such abstractions as a downstream concern for this reason. But to illustrate how one would approach higher-order composition abstractions with TypeBox, the example `model.ts` reimplements Zods type compositor using TypeBox as a subsystem for inference and validation.
-
-This provided example can be used as a reference point for implementing higher order abstractions on top of TypeBox. Doing so allows implementors to take advantage TypeBox's high performance validation infrastructure while being aligned to the JSON Schema specification.
+Abstractions like the above vary considerably from library to library, and TypeBox treats such abstractions as a downstream concern for this reason. But to illustrate how one would approach higher-order composition abstractions with TypeBox, the example `model.ts` reimplements Zods type compositor using TypeBox as a subsystem for inference and validation. This example can be used as a reference point for implementing higher order abstractions on top of TypeBox. Doing so allows implementors to take advantage TypeBox's high performance validation infrastructure while being aligned to the JSON Schema specification.
 
 License MIT
 
