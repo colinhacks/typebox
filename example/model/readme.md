@@ -25,7 +25,7 @@ By design, TypeBox treats type composition from validation as seperate concerns.
 const s = z.string().parse('hello') // method chaining not supported in TypeBox
 ```
 
-Composition abstractions vary considerably from library to library; and TypeBox treats such abstractions as a downstream concern for this reason. But to illustrate how one would approach constructing higher-order composition abstractions with TypeBox, the example [model.ts](./model.ts) reimplements the Zod compositor model, and uses TypeBox as a subsystem for inference and validation.
+Composition abstractions vary considerably from library to library; and TypeBox treats such abstractions as downstream concerns for this reason. But to illustrate how one would approach constructing higher-order type composition abstractions with TypeBox, the provided example [model.ts](./model.ts) reimplements the Zod compositor model (albiet with Pascal casing), and uses TypeBox as a subsystem for inference and validation.
 
 License MIT
 
