@@ -19,15 +19,19 @@ const V = T.Parse({ x: 1, y: 2, z: 3 }) // V is { x: number, y: number, z: numbe
 
 ## Overview
 
-By design, TypeBox seperates type composition from validation logic. The reason for this to keep the library modular and integrators to select TypeBox components meaningful to their projects. As an example, the Fastify framework gets good milage from TypeBox `Type` compositor, but not the `TypeCompiler` (as it uses Ajv for validation). A consequence of keeping schematic and validation logic seperate, is TypeBox does not provide validation on types, or express higher-order abstractions as seen in libraries like Zod, Yup or Joi (by default)
+By design, TypeBox treats type composition from validation as seperate concerns. The reason for this is both to keep the library modular as well as integrators to select specific TypeBox components meaningful to their projects. For example, Fastify users gets good milage from TypeBox `Type` compositor, but not the `TypeCompiler` as Fastify uses Ajv for validation.
+
+Seperation of concerns is generally a good thing, but as consequence of keeping schematics and validation concerns seperate, is means TypeBox does not implement validation on types, or express higher-order chainable functions as seen in libraries like Zod, Yup or Joi.
 
 ```typescript
+import z from 'zod'
+
 const s = z.string().parse('hello') // type s = 'string'
 ```
 
-While not provided by default, higher-order abstractions are indeed possible with TypeBox, but as such abstractions are vary considerably from library to library, TypeBox treats such abstractions as implementor concerns. To illustrate how one would approach higher-order composition abstractions with TypeBox, this example `model.ts` re-implements the Zod type compositor using TypeBox as a subsystem for inference and validation. It's written as a single TS file in under 500 lines of code.
+Abstractions like the above vary considerably from library to library, and TypeBox treats such abstractions as a downstream concern for this reason. But to illustrate how one would approach higher-order composition abstractions with TypeBox, the example `model.ts` reimplements Zods compositor using TypeBox as a subsystem for inference and validation, with Zod selected primairly due to the sophisitcation of its compositor.
 
-Integrators can use this example as a reference for building their own Zod-like, the benefits of which allow implementations to be based on the JSON Schema specification, as well as being able to leverage TypeBox's high performance validation infrastructure.
+This provided example can be used as a reference point for implementing higher order abstractions on top of TypeBox. Doing so allows implementors to take advantage TypeBox's high performance validation infrastructure while being aligned to the JSON Schema specification.
 
 License MIT
 
