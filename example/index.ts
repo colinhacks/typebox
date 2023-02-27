@@ -8,11 +8,15 @@ import { Custom } from '@sinclair/typebox/custom'
 import { Value, ValuePointer } from '@sinclair/typebox/value'
 import { Type, Kind, Static, TSchema } from '@sinclair/typebox'
 
-const T = Type.Not(Type.Union([Type.Number({ minimum: 10 })]), Type.Number())
+const T = Type.Object({
+  x: Type.Not(Type.Number(), Type.String(), { default: 'hello' }),
+})
 
-const C = TypeCompiler.Compile(T)
-const A = 1
-const E = [...C.Errors(A)]
+console.log(Value.Cast(T, { x: 'helloasd' }))
 
-console.log(JSON.stringify(E, null, 2))
-console.log(C.Check(A))
+// const C = TypeCompiler.Compile(T)
+// const A = 1
+// const E = [...C.Errors(A)]
+
+// console.log(JSON.stringify(E, null, 2))
+// console.log(C.Check(A))
