@@ -24,9 +24,7 @@ By design, TypeBox treats type composition from validation as seperate concerns.
 Seperation of concerns is generally a good thing, but as consequence of keeping schematics and validation concerns seperate, is means TypeBox does not implement validation on types, or express higher-order chainable functions as seen in libraries like Zod, Yup or Joi.
 
 ```typescript
-import z from 'zod'
-
-const s = z.string().parse('hello') // type s = 'string'
+const s = z.string().parse('hello') // not supported in TypeBox
 ```
 
 Abstractions like the above vary considerably from library to library, and TypeBox treats such abstractions as a downstream concern for this reason. But to illustrate how one would approach higher-order composition abstractions with TypeBox, the example `model.ts` reimplements Zods type compositor using TypeBox as a subsystem for inference and validation. This example can be used as a reference point for implementing higher order abstractions on top of TypeBox. Doing so allows implementors to take advantage TypeBox's high performance validation infrastructure while being aligned to the JSON Schema specification.
