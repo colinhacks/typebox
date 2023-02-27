@@ -7,39 +7,18 @@ import { Format } from '@sinclair/typebox/format'
 import { Custom } from '@sinclair/typebox/custom'
 import { Value, ValuePointer } from '@sinclair/typebox/value'
 import { Type, Kind, Static, TSchema } from '@sinclair/typebox'
+import Ajv from 'ajv'
 
-// -----------------------------------------------------------
-// Create: Type
-// -----------------------------------------------------------
+const ajv = new Ajv()
 
 const T = Type.Object({
-  x: Type.Number(),
-  y: Type.Number(),
-  z: Type.Number(),
+  x: Type.Not(Type.Union([
+    Type.Literal(1), 
+    Type.Literal(2), 
+    Type.Literal(3)
+  ]), Type.Number()),
 })
 
 type T = Static<typeof T>
 
-console.log(T)
-
-// -----------------------------------------------------------
-// Create: Value
-// -----------------------------------------------------------
-
-const V = Value.Create(T)
-
-console.log(V)
-
-// -----------------------------------------------------------
-// Compile: Type
-// -----------------------------------------------------------
-
-const C = TypeCompiler.Compile(T)
-
-console.log(C.Code())
-
-// -----------------------------------------------------------
-// Check: Value
-// -----------------------------------------------------------
-
-console.log(C.Check(V))
+console.log(ajv.validate(T, { x: 4 }))

@@ -286,6 +286,18 @@ export interface TNever extends TSchema {
 }
 
 // --------------------------------------------------------------------------
+// Never
+// --------------------------------------------------------------------------
+
+export type NotInfer<L, R = unknown> = unknown extends R ? unknown : L extends R ? R : never
+
+export interface TNot<N extends TSchema, T extends TSchema> extends TSchema {
+  [Kind]: 'Not'
+  static: NotInfer<Static<N>, Static<T>>
+  allOf: [N, { not: T }]
+}
+
+// --------------------------------------------------------------------------
 // Null
 // --------------------------------------------------------------------------
 
@@ -750,6 +762,11 @@ export class TypeBuilder {
         { type: 'boolean', const: true },
       ],
     })
+  }
+
+  /** `Standard` Creates a not type. */
+  public Not<N extends TSchema, T extends TSchema>(subschema: N, schema: T, options: SchemaOptions = {}): TNot<N, T> {
+    return this.Create({ ...options, [Kind]: 'Not', allOf: [{ not: subschema }, schema] })
   }
 
   /** `Standard` Creates a null type */

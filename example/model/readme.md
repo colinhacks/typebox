@@ -8,11 +8,14 @@ Using TypeBox as a Subsystem for Higher Order Type Composition
 import { Type } from './model'
 
 const T = Type.Object({
-   x: Type.Number(),
-   y: Type.Number()
-}).Extend({
-   z: Type.Number() 
-}).Strict().Compile()
+  x: Type.Number(),
+  y: Type.Number(),
+})
+  .Extend({
+    z: Type.Number(),
+  })
+  .Strict()
+  .Compile()
 
 const V = T.Parse({ x: 1, y: 2, z: 3 }) // V is { x: number, y: number, z: number }
 ```

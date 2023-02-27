@@ -334,6 +334,21 @@ The following table lists the Standard TypeBox types.
 │                                │                             │ }                              │
 │                                │                             │                                │
 ├────────────────────────────────┼─────────────────────────────┼────────────────────────────────┤
+│ const T = Type.Not(            | type Not<L, R = unknown> =  │ const T = {                    │
+|   Type.Union([                 │   unknown extends R ?       │   allOf: [{                    │
+│     Type.Literal('x'),         │   unknown : L extends R ?   │     not: {                     │
+│     Type.Literal('y'),         │   R : never                 │       anyOf: [                 │
+│     Type.Literal('z')          │                             │         { const: 'x' },        │
+│   ]),                          │ type T = Not<               │         { const: 'y' },        │
+│   Type.String()                │   'x' | 'y' | 'z',          │         { const: 'z' }         │
+│ )                              │   number                    │       ]                        │       
+│                                │ >                           │     }                          │     
+│                                │                             │   }, {                         │      
+│                                │                             │     type: 'string'             │
+│                                │                             │   }]                           │
+│                                │                             │ }                              │
+│                                │                             │                                │
+├────────────────────────────────┼─────────────────────────────┼────────────────────────────────┤
 │ const T = Type.Record(         │ type T = Record<            │ const T = {                    │
 │   Type.String(),               │   string,                   │   type: 'object',              │
 │   Type.Number()                │   number,                   │   patternProperties: {         │
