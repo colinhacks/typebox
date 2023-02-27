@@ -469,10 +469,15 @@ export namespace TypeCompiler {
     return `${locals.join('\n')}\nreturn ${check}`
   }
 
+  /** Returns the generated validation code used to validate this type. */
+  export function Code<T extends Types.TSchema>(schema: T, references: Types.TSchema[] = []) {
+    TypeGuard.Assert(schema, references)
+    return Build(schema, references)
+  }
+
   /** Compiles the given type for runtime type checking. This compiler only accepts known TypeBox types non-inclusive of unsafe types. */
   export function Compile<T extends Types.TSchema>(schema: T, references: Types.TSchema[] = []): TypeCheck<T> {
-    TypeGuard.Assert(schema, references)
-    const code = Build(schema, references)
+    const code = Code(schema, references)
     const custom_schemas = new Map(state_remote_custom_types)
     const compiledFunction = globalThis.Function('custom', 'format', 'hash', code)
     const checkFunction = compiledFunction(
