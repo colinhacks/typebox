@@ -2,7 +2,6 @@
 
 These examples demonstrate
 
-
 ### Examples
 
 - [Collections](./collections) Typesafe Map, Set and Array using the Type Compiler

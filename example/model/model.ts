@@ -48,9 +48,9 @@ Format.Set('ipv4', (value) => /^(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:2
 // -----------------------------------------------------------------
 // Into
 // -----------------------------------------------------------------
-export type IntoType<T extends Types.TSchema> = ModelType<T>
-export type IntoProperties<T extends Types.TProperties> = { [K in keyof T]: T[K] extends Types.TSchema ? IntoType<T[K]> : never }
-export type IntoTuple<T extends Types.TSchema[]> = [...{ [K in keyof T]: IntoType<T[K]> }]
+export type IntoModel<T extends Types.TSchema> = TypeModel<T>
+export type IntoModelProperties<T extends Types.TProperties> = { [K in keyof T]: T[K] extends Types.TSchema ? IntoModel<T[K]> : never }
+export type IntoModelTuple<T extends Types.TSchema[]> = [...{ [K in keyof T]: IntoModel<T[K]> }]
 
 // -----------------------------------------------------------------
 // Error
@@ -102,7 +102,7 @@ export class ModelAssertCompiled<T extends Types.TSchema> implements ModelAssert
 // -----------------------------------------------------------------
 // Type
 // -----------------------------------------------------------------
-export class ModelType<T extends Types.TSchema = Types.TSchema> {
+export class TypeModel<T extends Types.TSchema = Types.TSchema> {
   #assert: ModelAssert<T>
   #schema: T
   constructor(schema: T) {
@@ -127,22 +127,22 @@ export class ModelType<T extends Types.TSchema = Types.TSchema> {
     return Value.Create(this.#schema, [])
   }
   public Default(value: Types.Static<T>): this {
-    return new ModelType({ ...this.#schema, default: value }) as this
+    return new TypeModel({ ...this.#schema, default: value }) as this
   }
-  public ReadonlyOptional(): ModelType<Types.TReadonlyOptional<T>> {
-    return new ModelType(Types.Type.ReadonlyOptional(this.#schema))
+  public ReadonlyOptional(): TypeModel<Types.TReadonlyOptional<T>> {
+    return new TypeModel(Types.Type.ReadonlyOptional(this.#schema))
   }
-  public Optional(): ModelType<Types.TOptional<T>> {
-    return new ModelType(Types.Type.Optional(this.#schema))
+  public Optional(): TypeModel<Types.TOptional<T>> {
+    return new TypeModel(Types.Type.Optional(this.#schema))
   }
-  public Readonly(): ModelType<Types.TReadonly<T>> {
-    return new ModelType(Types.Type.Readonly(this.#schema))
+  public Readonly(): TypeModel<Types.TReadonly<T>> {
+    return new TypeModel(Types.Type.Readonly(this.#schema))
   }
   public Nullable() {
-    return new ModelUnion(Types.Type.Union([this.#schema, Types.Type.Null()]))
+    return new UnionModel(Types.Type.Union([this.#schema, Types.Type.Null()]))
   }
-  public Or<T extends Types.TSchema>(type: IntoType<T>) {
-    return new ModelType(Types.Type.Union([this.#schema, type.Schema]))
+  public Or<T extends Types.TSchema>(type: IntoModel<T>) {
+    return new TypeModel(Types.Type.Union([this.#schema, type.Schema]))
   }
   public get Code(): string {
     return this.#assert.Code()
@@ -151,250 +151,250 @@ export class ModelType<T extends Types.TSchema = Types.TSchema> {
     return Value.Clone(this.#schema)
   }
   public Compile(): this {
-    const compiled = new ModelType(this.#schema)
+    const compiled = new TypeModel(this.#schema)
     compiled.#assert = new ModelAssertCompiled(this.#schema)
     return compiled as this
   }
 }
-export class ModelObject<T extends Types.TObject = Types.TObject> extends ModelType<T> {
-  public And<U extends Types.TObject>(type: IntoType<U>) {
-    return new ModelIntersect(Types.Type.Intersect([this.Schema, type.Schema]))
+export class ObjectModel<T extends Types.TObject = Types.TObject> extends TypeModel<T> {
+  public And<U extends Types.TObject>(type: IntoModel<U>) {
+    return new IntersectModel(Types.Type.Intersect([this.Schema, type.Schema]))
   }
-  public Extend<U extends Types.TProperties>(properties: IntoProperties<U>) {
+  public Extend<U extends Types.TProperties>(properties: IntoModelProperties<U>) {
     const props = Object.keys(properties).reduce((acc, key) => ({ ...acc, [key]: properties[key].Schema }), {} as Types.TProperties) as U
     const object = Types.Type.Object(props)
-    return new ModelIntersect(Types.Type.Intersect([this.Schema, object]))
+    return new IntersectModel(Types.Type.Intersect([this.Schema, object]))
   }
   public Partial() {
-    return new ModelObject(Types.Type.Partial(this.Schema))
+    return new ObjectModel(Types.Type.Partial(this.Schema))
   }
   public Required() {
-    return new ModelObject(Types.Type.Required(this.Schema))
+    return new ObjectModel(Types.Type.Required(this.Schema))
   }
   public Pick<K extends Types.ObjectPropertyKeys<T>[]>(keys: [...K]) {
-    return new ModelObject(Types.Type.Pick(this.Schema, keys))
+    return new ObjectModel(Types.Type.Pick(this.Schema, keys))
   }
   public Omit<K extends Types.ObjectPropertyKeys<T>[]>(keys: readonly [...K]) {
-    return new ModelObject(Types.Type.Omit(this.Schema, keys))
+    return new ObjectModel(Types.Type.Omit(this.Schema, keys))
   }
   public Strict(): this {
-    return new ModelObject({ ...this.Schema, additionalProperties: false }) as this
+    return new ObjectModel({ ...this.Schema, additionalProperties: false }) as this
   }
   public KeyOf() {
-    return new ModelKeyOf(Types.Type.KeyOf(this.Schema))
+    return new KeyOfModel(Types.Type.KeyOf(this.Schema))
   }
 }
 
-export class ModelIntersect<T extends Types.TIntersect> extends ModelObject<T> {}
+export class IntersectModel<T extends Types.TIntersect> extends ObjectModel<T> {}
 
 // -----------------------------------------------------------------
 // Any
 // -----------------------------------------------------------------
-export class ModelAny<T extends Types.TAny> extends ModelType<T> {}
+export class AnyModel<T extends Types.TAny> extends TypeModel<T> {}
 
 // -----------------------------------------------------------------
 // Literal
 // -----------------------------------------------------------------
-export class ModelLiteral<T extends Types.TLiteral<Types.TLiteralValue>> extends ModelType<T> {}
+export class LiteralModel<T extends Types.TLiteral<Types.TLiteralValue>> extends TypeModel<T> {}
 
 // -----------------------------------------------------------------
 // Unknown
 // -----------------------------------------------------------------
-export class ModelUnknown<T extends Types.TUnknown> extends ModelType<T> {}
+export class UnknownModel<T extends Types.TUnknown> extends TypeModel<T> {}
 
 // -----------------------------------------------------------------
 // Null
 // -----------------------------------------------------------------
-export class ModelNull<T extends Types.TNull> extends ModelType<T> {}
+export class NullModel<T extends Types.TNull> extends TypeModel<T> {}
 
 // -----------------------------------------------------------------
 // Never
 // -----------------------------------------------------------------
-export class ModelNever<T extends Types.TNever> extends ModelType<T> {}
+export class NeverModel<T extends Types.TNever> extends TypeModel<T> {}
 
 // -----------------------------------------------------------------
 // Undefined
 // -----------------------------------------------------------------
-export class ModelUndefined<T extends Types.TUndefined> extends ModelType<T> {}
+export class UndefinedModel<T extends Types.TUndefined> extends TypeModel<T> {}
 
 // -----------------------------------------------------------------
 // Array
 // -----------------------------------------------------------------
-export class ModelArray<T extends Types.TArray<Types.TSchema>> extends ModelType<T> {
+export class ArrayModel<T extends Types.TArray<Types.TSchema>> extends TypeModel<T> {
   public MinLength(n: number) {
-    return new ModelArray(Types.Type.Array({ ...this.Schema, maxItems: n }))
+    return new ArrayModel(Types.Type.Array({ ...this.Schema, maxItems: n }))
   }
   public MaxLength(n: number) {
-    return new ModelArray(Types.Type.Array({ ...this.Schema, maxItems: n }))
+    return new ArrayModel(Types.Type.Array({ ...this.Schema, maxItems: n }))
   }
   public Length(n: number) {
-    return new ModelArray(Types.Type.Array({ ...this.Schema, minItems: n, maxItems: n }))
+    return new ArrayModel(Types.Type.Array({ ...this.Schema, minItems: n, maxItems: n }))
   }
   public Distinct() {
-    return new ModelArray(Types.Type.Array({ ...this.Schema, uniqueItems: true }))
+    return new ArrayModel(Types.Type.Array({ ...this.Schema, uniqueItems: true }))
   }
 }
 // -----------------------------------------------------------------
 // String
 // -----------------------------------------------------------------
-export class ModelString extends ModelType<Types.TString> {
+export class StringModel extends TypeModel<Types.TString> {
   public MinLength(n: number) {
-    return new ModelString(Types.Type.String({ ...this.Schema, minLength: n }))
+    return new StringModel(Types.Type.String({ ...this.Schema, minLength: n }))
   }
   public MaxLength(n: number) {
-    return new ModelString(Types.Type.String({ ...this.Schema, maxLength: n }))
+    return new StringModel(Types.Type.String({ ...this.Schema, maxLength: n }))
   }
   public Length(n: number) {
-    return new ModelString(Types.Type.String({ ...this.Schema, maxLength: n, minLength: n }))
+    return new StringModel(Types.Type.String({ ...this.Schema, maxLength: n, minLength: n }))
   }
   public Email() {
-    return new ModelString(Types.Type.String({ ...this.Schema, format: 'email' }))
+    return new StringModel(Types.Type.String({ ...this.Schema, format: 'email' }))
   }
   public Uuid() {
-    return new ModelString(Types.Type.String({ ...this.Schema, format: 'uuid' }))
+    return new StringModel(Types.Type.String({ ...this.Schema, format: 'uuid' }))
   }
   public Url() {
-    return new ModelString(Types.Type.String({ ...this.Schema, format: 'url' }))
+    return new StringModel(Types.Type.String({ ...this.Schema, format: 'url' }))
   }
   public Ipv6() {
-    return new ModelString(Types.Type.String({ ...this.Schema, format: 'ipv6' }))
+    return new StringModel(Types.Type.String({ ...this.Schema, format: 'ipv6' }))
   }
   public Ipv4() {
-    return new ModelString(Types.Type.String({ ...this.Schema, format: 'ipv4' }))
+    return new StringModel(Types.Type.String({ ...this.Schema, format: 'ipv4' }))
   }
 }
 // -----------------------------------------------------------------
 // Number
 // -----------------------------------------------------------------
-export class ModelNumber extends ModelType<Types.TNumber> {
+export class NumberModel extends TypeModel<Types.TNumber> {
   public GreaterThan(n: number) {
-    return new ModelNumber(Types.Type.Number({ ...this.Schema, exclusiveMinimum: n }))
+    return new NumberModel(Types.Type.Number({ ...this.Schema, exclusiveMinimum: n }))
   }
   public GreaterThanEqual(n: number) {
-    return new ModelNumber(Types.Type.Number({ ...this.Schema, minimum: n }))
+    return new NumberModel(Types.Type.Number({ ...this.Schema, minimum: n }))
   }
   public LessThan(n: number) {
-    return new ModelNumber(Types.Type.Number({ ...this.Schema, exclusiveMaximum: n }))
+    return new NumberModel(Types.Type.Number({ ...this.Schema, exclusiveMaximum: n }))
   }
   public LessThanEqual(n: number) {
-    return new ModelNumber(Types.Type.Number({ ...this.Schema, maximum: n }))
+    return new NumberModel(Types.Type.Number({ ...this.Schema, maximum: n }))
   }
   public MultipleOf(n: number) {
-    return new ModelNumber(Types.Type.Number({ ...this.Schema, multipleOf: n }))
+    return new NumberModel(Types.Type.Number({ ...this.Schema, multipleOf: n }))
   }
   public Positive() {
-    return new ModelNumber(Types.Type.Number({ ...this.Schema, minimum: 0 }))
+    return new NumberModel(Types.Type.Number({ ...this.Schema, minimum: 0 }))
   }
   public Negative() {
-    return new ModelNumber(Types.Type.Number({ ...this.Schema, maximum: 0 }))
+    return new NumberModel(Types.Type.Number({ ...this.Schema, maximum: 0 }))
   }
 }
 // -----------------------------------------------------------------
 // Integer
 // -----------------------------------------------------------------
-export class ModelInteger extends ModelType<Types.TInteger> {
+export class IntegerModel extends TypeModel<Types.TInteger> {
   public GreaterThan(n: number) {
-    return new ModelInteger(Types.Type.Integer({ ...this.Schema, exclusiveMinimum: n }))
+    return new IntegerModel(Types.Type.Integer({ ...this.Schema, exclusiveMinimum: n }))
   }
   public GreaterThanEqual(n: number) {
-    return new ModelInteger(Types.Type.Integer({ ...this.Schema, minimum: n }))
+    return new IntegerModel(Types.Type.Integer({ ...this.Schema, minimum: n }))
   }
   public LessThan(n: number) {
-    return new ModelInteger(Types.Type.Integer({ ...this.Schema, exclusiveMaximum: n }))
+    return new IntegerModel(Types.Type.Integer({ ...this.Schema, exclusiveMaximum: n }))
   }
   public LessThanEqual(n: number) {
-    return new ModelInteger(Types.Type.Integer({ ...this.Schema, maximum: n }))
+    return new IntegerModel(Types.Type.Integer({ ...this.Schema, maximum: n }))
   }
   public MultipleOf(n: number) {
-    return new ModelInteger(Types.Type.Integer({ ...this.Schema, multipleOf: n }))
+    return new IntegerModel(Types.Type.Integer({ ...this.Schema, multipleOf: n }))
   }
   public Positive() {
-    return new ModelInteger(Types.Type.Integer({ ...this.Schema, minimum: 0 }))
+    return new IntegerModel(Types.Type.Integer({ ...this.Schema, minimum: 0 }))
   }
   public Negative() {
-    return new ModelInteger(Types.Type.Integer({ ...this.Schema, maximum: 0 }))
+    return new IntegerModel(Types.Type.Integer({ ...this.Schema, maximum: 0 }))
   }
 }
 
 // -----------------------------------------------------------------
 // Boolean
 // -----------------------------------------------------------------
-export class ModelBoolean extends ModelType<Types.TBoolean> {}
+export class BooleanModel extends TypeModel<Types.TBoolean> {}
 
 // -----------------------------------------------------------------
 // Date
 // -----------------------------------------------------------------
-export class ModelDate extends ModelType<Types.TDate> {}
+export class DateModel extends TypeModel<Types.TDate> {}
 
 // -----------------------------------------------------------------
 // KeyOf
 // -----------------------------------------------------------------
-export class ModelKeyOf<T extends Types.TKeyOf<any>> extends ModelType<T> {}
+export class KeyOfModel<T extends Types.TKeyOf<any>> extends TypeModel<T> {}
 
 // -----------------------------------------------------------------
 // Object
 // -----------------------------------------------------------------
-export type ModelProperties = Record<any, ModelType>
+export type PropertiesModel = Record<any, TypeModel>
 
 // -----------------------------------------------------------------
 // Promise
 // -----------------------------------------------------------------
-export class ModelPromise<T extends Types.TSchema> extends ModelType<T> {}
+export class PromiseModel<T extends Types.TSchema> extends TypeModel<T> {}
 
 // -----------------------------------------------------------------
 // Union
 // -----------------------------------------------------------------
-export class ModelUnion<T extends Types.TUnion> extends ModelType<T> {}
+export class UnionModel<T extends Types.TUnion> extends TypeModel<T> {}
 
 // -----------------------------------------------------------------
 // Tuple
 // -----------------------------------------------------------------
-export class ModelTuple<T extends Types.TTuple> extends ModelType<T> {}
+export class TupleModel<T extends Types.TTuple> extends TypeModel<T> {}
 
 // -----------------------------------------------------------------
 // Pick
 // -----------------------------------------------------------------
-export class ModelPick<T extends Types.TObject, Properties extends Types.ObjectPropertyKeys<T>[]> extends ModelType<Types.TPick<T, Properties>> {}
+export class PickModel<T extends Types.TObject, Properties extends Types.ObjectPropertyKeys<T>[]> extends TypeModel<Types.TPick<T, Properties>> {}
 
 // -----------------------------------------------------------------
 // Uint8Array
 // -----------------------------------------------------------------
-export class ModelUint8Array<T extends Types.TUint8Array> extends ModelType<T> {
+export class Uint8ArrayModel<T extends Types.TUint8Array> extends TypeModel<T> {
   public MinByteLength(n: number) {
-    return new ModelUint8Array(Types.Type.Uint8Array({ ...this.Schema, minByteLength: n }))
+    return new Uint8ArrayModel(Types.Type.Uint8Array({ ...this.Schema, minByteLength: n }))
   }
   public MaxByteLength(n: number) {
-    return new ModelUint8Array(Types.Type.Uint8Array({ ...this.Schema, maxByteLength: n }))
+    return new Uint8ArrayModel(Types.Type.Uint8Array({ ...this.Schema, maxByteLength: n }))
   }
   public Length(n: number) {
-    return new ModelUint8Array(Types.Type.Uint8Array({ ...this.Schema, minByteLength: n, maxByteLength: n }))
+    return new Uint8ArrayModel(Types.Type.Uint8Array({ ...this.Schema, minByteLength: n, maxByteLength: n }))
   }
 }
 
 // -----------------------------------------------------------------
 // Record
 // -----------------------------------------------------------------
-export class ModelRecord<T extends Types.TSchema> extends ModelType<Types.TRecord<Types.TString, T>> {}
+export class RecordModel<T extends Types.TSchema> extends TypeModel<Types.TRecord<Types.TString, T>> {}
 
 // -----------------------------------------------------------------
 // Recursive
 // -----------------------------------------------------------------
 
-export class ModelSelf extends ModelType<Types.TSelf> {}
+export class SelfModel extends TypeModel<Types.TSelf> {}
 
-export class ModelRecursive<T extends Types.TSchema> extends ModelType<T> {}
+export class RecursiveModel<T extends Types.TSchema> extends TypeModel<T> {}
 
 // -----------------------------------------------------------------
 // Function
 // -----------------------------------------------------------------
 
-export type ModelFunctionParameters<T extends Types.TSchema[]> = [...{ [K in keyof T]: Types.Static<T[K]> }]
+export type FunctionModelParameters<T extends Types.TSchema[]> = [...{ [K in keyof T]: Types.Static<T[K]> }]
 
-export type ModelFunction<T extends Types.TFunction<any[], any>> = (...param: ModelFunctionParameters<T['parameters']>) => Types.Static<T['returns']>
+export type FunctionModel<T extends Types.TFunction<any[], any>> = (...param: FunctionModelParameters<T['parameters']>) => Types.Static<T['returns']>
 
-export class ModelFunctionDefinition<T extends Types.TFunction<any[], any>> {
+export class FunctionModelDefinition<T extends Types.TFunction<any[], any>> {
   constructor(public readonly schema: T) {}
-  public Implement(callback: ModelFunction<T>): ModelFunction<T> {
+  public Implement(callback: FunctionModel<T>): FunctionModel<T> {
     const typecheck = TypeCompiler.Compile(Types.Type.Parameters(this.schema))
     return (...params: unknown[]) => {
       if (typecheck.Check(params)) return callback(...params)
@@ -407,72 +407,72 @@ export class ModelFunctionDefinition<T extends Types.TFunction<any[], any>> {
 /** Type Model Builder */
 export class ModelBuilder {
   public Date() {
-    return new ModelDate(Types.Type.Date())
+    return new DateModel(Types.Type.Date())
   }
   public Boolean() {
-    return new ModelBoolean(Types.Type.Boolean())
+    return new BooleanModel(Types.Type.Boolean())
   }
   public String() {
-    return new ModelString(Types.Type.String())
+    return new StringModel(Types.Type.String())
   }
   public Number() {
-    return new ModelNumber(Types.Type.Number())
+    return new NumberModel(Types.Type.Number())
   }
   public Integer() {
-    return new ModelInteger(Types.Type.Integer())
+    return new IntegerModel(Types.Type.Integer())
   }
-  public Object<T extends Types.TProperties>(properties: IntoProperties<T>) {
+  public Object<T extends Types.TProperties>(properties: IntoModelProperties<T>) {
     const mapped = Object.keys(properties).reduce((acc, key) => ({ ...acc, [key]: properties[key].Schema }), {} as Types.TProperties)
-    return new ModelObject(Types.Type.Object(mapped)) as ModelObject<Types.TObject<T>>
+    return new ObjectModel(Types.Type.Object(mapped)) as ObjectModel<Types.TObject<T>>
   }
-  public Array<T extends Types.TSchema>(item: ModelType<T>) {
-    return new ModelArray(Types.Type.Array(item.Schema))
+  public Array<T extends Types.TSchema>(item: TypeModel<T>) {
+    return new ArrayModel(Types.Type.Array(item.Schema))
   }
-  public Union<T extends Types.TSchema[]>(union: [...IntoTuple<T>]) {
-    return new ModelUnion(Types.Type.Union(union.map((type) => type.Schema))) as ModelUnion<Types.TUnion<T>>
+  public Union<T extends Types.TSchema[]>(union: [...IntoModelTuple<T>]) {
+    return new UnionModel(Types.Type.Union(union.map((type) => type.Schema))) as UnionModel<Types.TUnion<T>>
   }
-  public Tuple<T extends Types.TSchema[]>(tuple: IntoTuple<T>) {
-    return new ModelTuple(Types.Type.Tuple(tuple.map((type) => type.Schema))) as ModelTuple<Types.TTuple<T>>
+  public Tuple<T extends Types.TSchema[]>(tuple: IntoModelTuple<T>) {
+    return new TupleModel(Types.Type.Tuple(tuple.map((type) => type.Schema))) as TupleModel<Types.TTuple<T>>
   }
-  public Intersect<T extends Types.TObject[]>(objects: [...IntoTuple<T>]) {
-    return new ModelObject(Types.Type.Intersect(objects.map((type) => type.Schema))) as ModelObject<Types.TIntersect<T>>
+  public Intersect<T extends Types.TObject[]>(objects: [...IntoModelTuple<T>]) {
+    return new ObjectModel(Types.Type.Intersect(objects.map((type) => type.Schema))) as ObjectModel<Types.TIntersect<T>>
   }
   public Literal<T extends Types.TLiteralValue>(value: T) {
-    return new ModelLiteral(Types.Type.Literal(value))
+    return new LiteralModel(Types.Type.Literal(value))
   }
-  public Promise<T extends Types.TSchema>(type: IntoType<T>) {
-    return new ModelPromise(Types.Type.Promise(type.Schema))
+  public Promise<T extends Types.TSchema>(type: IntoModel<T>) {
+    return new PromiseModel(Types.Type.Promise(type.Schema))
   }
-  public Function<P extends Types.TSchema[], R extends Types.TSchema>(params: IntoTuple<P>, returns: IntoType<R>) {
-    return new ModelFunctionDefinition(Types.Type.Function(params.map((param) => param.Schema) as [...P], returns.Schema))
+  public Function<P extends Types.TSchema[], R extends Types.TSchema>(params: IntoModelTuple<P>, returns: IntoModel<R>) {
+    return new FunctionModelDefinition(Types.Type.Function(params.map((param) => param.Schema) as [...P], returns.Schema))
   }
   public Null() {
-    return new ModelNull(Types.Type.Null())
+    return new NullModel(Types.Type.Null())
   }
   public Never() {
-    return new ModelNever(Types.Type.Never())
+    return new NeverModel(Types.Type.Never())
   }
   public Undefined() {
-    return new ModelUndefined(Types.Type.Undefined())
+    return new UndefinedModel(Types.Type.Undefined())
   }
   public Unknown() {
-    return new ModelUnknown(Types.Type.Unknown())
+    return new UnknownModel(Types.Type.Unknown())
   }
   public Any() {
-    return new ModelAny(Types.Type.Any())
+    return new AnyModel(Types.Type.Any())
   }
-  public Record<T extends Types.TSchema>(type: IntoType<T>): ModelRecord<T> {
-    return new ModelRecord(Types.Type.Record(Types.Type.String(), type.Schema))
+  public Record<T extends Types.TSchema>(type: IntoModel<T>): RecordModel<T> {
+    return new RecordModel(Types.Type.Record(Types.Type.String(), type.Schema))
   }
   public Uint8Array() {
-    return new ModelUint8Array(Types.Type.Uint8Array())
+    return new Uint8ArrayModel(Types.Type.Uint8Array())
   }
-  public Recursive<T extends Types.TSchema>(callback: (self: ModelSelf) => ModelType<T>) {
+  public Recursive<T extends Types.TSchema>(callback: (self: SelfModel) => TypeModel<T>) {
     // prettier-ignore
-    return new ModelRecursive(Types.Type.Recursive((Self) => callback(new ModelSelf(Self)).Schema))
+    return new RecursiveModel(Types.Type.Recursive((Self) => callback(new SelfModel(Self)).Schema))
   }
 }
 
-export type Static<T> = T extends ModelType<infer S> ? Types.Static<S> : unknown
+export type Static<T> = T extends TypeModel<infer S> ? Types.Static<S> : unknown
 
 export const Type = new ModelBuilder()

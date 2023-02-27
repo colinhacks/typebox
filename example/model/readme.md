@@ -4,11 +4,11 @@ Using TypeBox as a Subsystem for Higher Order Composition
 
 ## Overview
 
-By design, TypeBox seperates type composition from validation logic. The reason for this to allow integrators to select only the TypeBox components meaningful to their respective projects. For example, the Fastify framework sees good use from TypeBox type composition, but internally uses Ajv for validation (so embedding the TypeBox compiler doesn't make sense). However, a direct consequence of keeping schematic and validation seperate, is TypeBox cannot provide built in validation for types, or express higher-order type composition as seen in libraries like Zod.
+By design, TypeBox seperates type composition from validation logic. The reason for this to allow integrators to select only the TypeBox components meaningful to their projects. For example, the Fastify framework gets good milage from TypeBox schema composition, but internally uses Ajv for validation (so embedding the TypeBox compiler doesn't make sense). However, a consequence of TypeBox keeping schematic and validation logic seperate, is it cannot provide built in validation on types, or express higher-order type composition abstractions as seen in libraries like Zod (by default)
 
-Higher-order composition is possible with TypeBox, but as such abstractions are vary considerably from library to library, TypeBox such abstractions as a down stream concern. To illustrate how one would approach higher-order composition abstractions with TypeBox, this example script re-implements the Zod type compositor model using TypeBox as a subsystem for inference and validation.
+Higher-order abstractions are possible with TypeBox, but as such abstractions are vary considerably from library to library, TypeBox treats these abstractions as implementor concerns. But to illustrate how one would approach higher-order composition abstractions with TypeBox, this example `model.ts` re-implements the Zod type compositor using TypeBox as a subsystem for inference and validation. It's written as a single TS file in under 500 lines of code.
 
-Integrators can use this example as a reference for building their own Zod-like libraries, while getting the benefits of being based on the JSON Schema specification, as well as being able to leverage TypeBox's high performance validation infrastructure.
+Integrators can use this example as a reference for building their own Zod-like, the benefits of which allow implementations to be based on the JSON Schema specification, as well as being able to leverage TypeBox's high performance validation infrastructure.
 
 License MIT
 
@@ -23,58 +23,61 @@ License MIT
 
 ## Subsystem
 
-In the diagram below, the `Type`, `Value` and `TypeCompiler` modules are used as a sub system in which to express Zod.
+In the diagram below, the `Type`, `Value` and `TypeCompiler` modules are used as a subsystem which provides the Zod-like inference, validation and type compilation. The `Model` uses these components to implement aspects of the Zod interface, and uses re-implements Zod's compositor model (method chaining, logical types, extends and the `Parse(value: unknown): T` function)
 
 ```
             Higher Order Composition
 
-                ┌─────────────┐
-                |    Model    | <- `model.ts` - Is a replica of Zod (but capitalized)
-                └─────────────┘
-                       |
- ──────────-──[TypeBox Subsystem]─────────────────
+                 ┌─────────────┐
+                 │    Model    │ <-- 'model.ts' - A Pascal cased replica of Zod
+                 └─────────────┘
+                        |
+ ┌──────────-──[TypeBox Subsystem]────────────────┐
+ │                                                │
+ │  ┌─────────┐   ┌─────────┐  ┌──────────────┐   │
+ │  │  Type   │   │  Value  │  │ TypeCompiler │   │
+ │  └─────────┘   └─────────┘  └──────────────┘   │
+ │                                                │
+ └────────────────────────────────────────────────┘
+     JSON Schema + Types + Inference + Assertions
 
-   ┌─────────┐   ┌─────────┐  ┌──────────────┐
-   │  Type   │   │  Value  │  │ TypeCompiler │
-   └─────────┘   └─────────┘  └──────────────┘
-
- JSON Schema, Types, Inference, Runtime Assertions
 ```
 
 ## Model
 
-Each TypeBox type is wrapped in a associated `Model` type. The `Model` is used to express a fluent interface for that type. All types in the model extend the base class `ModelType<T>`
+To support method chaining, the model encapuates each TypeBox type in an associated `TypeModel` class. Each class is responsible for implementing the chainable functions applicable for that type. All types in the model extend the base class `TypeModel<T>`
 
 ```typescript
 const T = Type.String().MaxLength(64).Email().Compile()
 ```
 
-The above code can be expressed with the following
+To express the above, we can implement the following model types.
 
 ```typescript
-export class ModelType<T extends Types.TSchema> {
+export class TypeModel<T extends Types.TSchema> {
+  constructor(public readonly schema: T) {}
   public Compile(): this {
-    return this // todo: internally compile this type
+    return this // see example implementation
   }
 }
-export class ModelString extends ModelType<Types.TString> {
+export class StringModel extends TypeModel<Types.TString> {
   public MaxLength(n: number) {
-    return new ModelString(Types.Type.String({ ...this.Schema, maxLength: n }))
+    return new StringModel(Types.Type.String({ ...this.schema, maxLength: n }))
   }
   public Email() {
-    return new ModelString(Types.Type.String({ ...this.Schema, format: 'email' }))
+    return new StringModel(Types.Type.String({ ...this.schema, format: 'email' }))
   }
 }
 namespace Type {
   export function String() {
-    return new ModelString(Types.Type.String())
+    return new StringModel(Types.Type.String())
   }
 }
 ```
 
 ## Operators
 
-It is common for higher order compositors to implement user friendly operators such as `Extend`, `And`, `Or` which are aliases for `Intersect` and `Union`. This example implements the following.
+It is common for higher order abstractions to implement user friendly operators such as `Extend`, `And`, `Or` which are aliases for `Intersect` and `Union`. This example implements the following.
 
 ### Extends
 
