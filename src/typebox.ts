@@ -286,15 +286,15 @@ export interface TNever extends TSchema {
 }
 
 // --------------------------------------------------------------------------
-// Never
+// Not
 // --------------------------------------------------------------------------
 
-export type NotInfer<L, R = unknown> = unknown extends R ? unknown : L extends R ? R : never
+export type StaticNot<L, R = unknown> = unknown extends R ? unknown : L extends R ? R : any // universal type
 
-export interface TNot<N extends TSchema, T extends TSchema> extends TSchema {
+export interface TNot<Not extends TSchema = TSchema, T extends TSchema = TSchema> extends TSchema {
   [Kind]: 'Not'
-  static: NotInfer<Static<N>, Static<T>>
-  allOf: [N, { not: T }]
+  static: StaticNot<Static<Not>, Static<T>>
+  allOf: [{ not: Not }, T]
 }
 
 // --------------------------------------------------------------------------
@@ -765,8 +765,8 @@ export class TypeBuilder {
   }
 
   /** `Standard` Creates a not type. */
-  public Not<N extends TSchema, T extends TSchema>(subschema: N, schema: T, options: SchemaOptions = {}): TNot<N, T> {
-    return this.Create({ ...options, [Kind]: 'Not', allOf: [{ not: subschema }, schema] })
+  public Not<N extends TSchema, T extends TSchema>(not: N, schema: T, options: SchemaOptions = {}): TNot<N, T> {
+    return this.Create({ ...options, [Kind]: 'Not', allOf: [{ not }, schema] })
   }
 
   /** `Standard` Creates a null type */

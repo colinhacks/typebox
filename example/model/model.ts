@@ -144,6 +144,9 @@ export class TypeModel<T extends Types.TSchema = Types.TSchema> {
   public Or<T extends Types.TSchema>(type: IntoModel<T>) {
     return new TypeModel(Types.Type.Union([this.#schema, type.Schema]))
   }
+  public Not<U extends Types.TSchema>(type: IntoModel<U>) {
+    return new NotModel(Types.Type.Not(type.Schema, this.Schema))
+  }
   public get Code(): string {
     return this.#assert.Code()
   }
@@ -211,6 +214,11 @@ export class NullModel<T extends Types.TNull> extends TypeModel<T> {}
 // Never
 // -----------------------------------------------------------------
 export class NeverModel<T extends Types.TNever> extends TypeModel<T> {}
+
+// -----------------------------------------------------------------
+// Not
+// -----------------------------------------------------------------
+export class NotModel<T extends Types.TNot<Types.TSchema, Types.TSchema>> extends TypeModel<T> {}
 
 // -----------------------------------------------------------------
 // Undefined
