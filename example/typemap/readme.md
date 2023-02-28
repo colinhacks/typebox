@@ -19,7 +19,7 @@ $ npm install typemap
 ## Example
 
 ```typescript
-import { Type, Static } from 'typemap'
+import Type, { Static } from 'typemap'
 
 const T = Type.String().Equals('hello world').Compile()
 
