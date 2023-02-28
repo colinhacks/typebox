@@ -6,17 +6,28 @@ import { Conditional } from '@sinclair/typebox/conditional'
 import { Format } from '@sinclair/typebox/format'
 import { Custom } from '@sinclair/typebox/custom'
 import { Value, ValuePointer } from '@sinclair/typebox/value'
-// import {  Kind, Static, TSchema } from '@sinclair/typebox'
+import { Type, Kind, Static, TSchema } from '@sinclair/typebox'
 
-import { Type, Static } from './model/model'
+function nope(): TSchema {
+  const no = Array.from({ length: 100 }).map((_, i) =>
+    Type.Object({
+      x: Type.Literal(i),
+      y: Type.Literal(2),
+      z: Type.Literal(3),
+    }),
+  )
+  return Type.Union(no)
+}
 
-const T = Type.Object({
-  x: Type.String().Not(Type.Literal('hello'))
-}).Extend({
-  y: Type.Number().GreaterThan(1)
-})
+const T = Type.Not(
+  nope(),
+  Type.Object({
+    x: Type.Number(),
+    y: Type.Number(),
+    z: Type.Number(),
+  }),
+)
 
-console.log(T.Schema)
+const C = TypeCompiler.Compile(T)
 
-
-
+console.log(C.Check({ x: 100, y: 2, z: 3 }))

@@ -146,19 +146,19 @@ export namespace TypeCompiler {
   // Types
   // -------------------------------------------------------------------
   function* Any(schema: Types.TAny, value: string): IterableIterator<string> {
-    yield '(true)'
+    yield 'true'
   }
 
   function* Array(schema: Types.TArray, value: string): IterableIterator<string> {
     const expression = CreateExpression(schema.items, 'value')
-    yield `(Array.isArray(${value}) && ${value}.every(value => ${expression}))`
-    if (IsNumber(schema.minItems)) yield `(${value}.length >= ${schema.minItems})`
-    if (IsNumber(schema.maxItems)) yield `(${value}.length <= ${schema.maxItems})`
+    yield `Array.isArray(${value}) && ${value}.every(value => ${expression})`
+    if (IsNumber(schema.minItems)) yield `${value}.length >= ${schema.minItems}`
+    if (IsNumber(schema.maxItems)) yield `${value}.length <= ${schema.maxItems}`
     if (schema.uniqueItems === true) yield `((function() { const set = new Set(); for(const element of ${value}) { const hashed = hash(element); if(set.has(hashed)) { return false } else { set.add(hashed) } } return true })())`
   }
 
   function* Boolean(schema: Types.TBoolean, value: string): IterableIterator<string> {
-    yield `(typeof ${value} === 'boolean')`
+    yield `typeof ${value} === 'boolean'`
   }
 
   function* Constructor(schema: Types.TConstructor, value: string): IterableIterator<string> {
@@ -167,58 +167,58 @@ export namespace TypeCompiler {
 
   function* Date(schema: Types.TDate, value: string): IterableIterator<string> {
     yield `(${value} instanceof Date) && !isNaN(${value}.getTime())`
-    if (IsNumber(schema.exclusiveMinimumTimestamp)) yield `(${value}.getTime() > ${schema.exclusiveMinimumTimestamp})`
-    if (IsNumber(schema.exclusiveMaximumTimestamp)) yield `(${value}.getTime() < ${schema.exclusiveMaximumTimestamp})`
-    if (IsNumber(schema.minimumTimestamp)) yield `(${value}.getTime() >= ${schema.minimumTimestamp})`
-    if (IsNumber(schema.maximumTimestamp)) yield `(${value}.getTime() <= ${schema.maximumTimestamp})`
+    if (IsNumber(schema.exclusiveMinimumTimestamp)) yield `${value}.getTime() > ${schema.exclusiveMinimumTimestamp}`
+    if (IsNumber(schema.exclusiveMaximumTimestamp)) yield `${value}.getTime() < ${schema.exclusiveMaximumTimestamp}`
+    if (IsNumber(schema.minimumTimestamp)) yield `${value}.getTime() >= ${schema.minimumTimestamp}`
+    if (IsNumber(schema.maximumTimestamp)) yield `${value}.getTime() <= ${schema.maximumTimestamp}`
   }
 
   function* Function(schema: Types.TFunction, value: string): IterableIterator<string> {
-    yield `(typeof ${value} === 'function')`
+    yield `typeof ${value} === 'function'`
   }
 
   function* Integer(schema: Types.TInteger, value: string): IterableIterator<string> {
     yield `(typeof ${value} === 'number' && Number.isInteger(${value}))`
-    if (IsNumber(schema.multipleOf)) yield `(${value} % ${schema.multipleOf} === 0)`
-    if (IsNumber(schema.exclusiveMinimum)) yield `(${value} > ${schema.exclusiveMinimum})`
-    if (IsNumber(schema.exclusiveMaximum)) yield `(${value} < ${schema.exclusiveMaximum})`
-    if (IsNumber(schema.minimum)) yield `(${value} >= ${schema.minimum})`
-    if (IsNumber(schema.maximum)) yield `(${value} <= ${schema.maximum})`
+    if (IsNumber(schema.multipleOf)) yield `(${value} % ${schema.multipleOf}) === 0`
+    if (IsNumber(schema.exclusiveMinimum)) yield `${value} > ${schema.exclusiveMinimum}`
+    if (IsNumber(schema.exclusiveMaximum)) yield `${value} < ${schema.exclusiveMaximum}`
+    if (IsNumber(schema.minimum)) yield `${value} >= ${schema.minimum}`
+    if (IsNumber(schema.maximum)) yield `${value} <= ${schema.maximum}`
   }
 
   function* Literal(schema: Types.TLiteral, value: string): IterableIterator<string> {
     if (typeof schema.const === 'number' || typeof schema.const === 'boolean') {
-      yield `(${value} === ${schema.const})`
+      yield `${value} === ${schema.const}`
     } else {
-      yield `(${value} === '${schema.const}')`
+      yield `${value} === '${schema.const}'`
     }
   }
 
   function* Never(schema: Types.TNever, value: string): IterableIterator<string> {
-    yield `(false)`
+    yield `false`
   }
 
   function* Not(schema: Types.TNot, value: string): IterableIterator<string> {
     const left = CreateExpression(schema.allOf[0].not, value)
     const right = CreateExpression(schema.allOf[1], value)
-    yield `(!${left} && ${right})`
+    yield `!${left} && ${right}`
   }
 
   function* Null(schema: Types.TNull, value: string): IterableIterator<string> {
-    yield `(${value} === null)`
+    yield `${value} === null`
   }
 
   function* Number(schema: Types.TNumber, value: string): IterableIterator<string> {
     if (TypeSystem.AllowNaN) {
-      yield `(typeof ${value} === 'number')`
+      yield `typeof ${value} === 'number'`
     } else {
       yield `(typeof ${value} === 'number' && !isNaN(${value}))`
     }
-    if (IsNumber(schema.multipleOf)) yield `(${value} % ${schema.multipleOf} === 0)`
-    if (IsNumber(schema.exclusiveMinimum)) yield `(${value} > ${schema.exclusiveMinimum})`
-    if (IsNumber(schema.exclusiveMaximum)) yield `(${value} < ${schema.exclusiveMaximum})`
-    if (IsNumber(schema.minimum)) yield `(${value} >= ${schema.minimum})`
-    if (IsNumber(schema.maximum)) yield `(${value} <= ${schema.maximum})`
+    if (IsNumber(schema.multipleOf)) yield `(${value} % ${schema.multipleOf}) === 0`
+    if (IsNumber(schema.exclusiveMinimum)) yield `${value} > ${schema.exclusiveMinimum}`
+    if (IsNumber(schema.exclusiveMaximum)) yield `${value} < ${schema.exclusiveMaximum}`
+    if (IsNumber(schema.minimum)) yield `${value} >= ${schema.minimum}`
+    if (IsNumber(schema.maximum)) yield `${value} <= ${schema.maximum}`
   }
 
   function* Object(schema: Types.TObject, value: string): IterableIterator<string> {
@@ -227,8 +227,8 @@ export namespace TypeCompiler {
     } else {
       yield `(typeof ${value} === 'object' && ${value} !== null && !Array.isArray(${value}))`
     }
-    if (IsNumber(schema.minProperties)) yield `(Object.getOwnPropertyNames(${value}).length >= ${schema.minProperties})`
-    if (IsNumber(schema.maxProperties)) yield `(Object.getOwnPropertyNames(${value}).length <= ${schema.maxProperties})`
+    if (IsNumber(schema.minProperties)) yield `Object.getOwnPropertyNames(${value}).length >= ${schema.minProperties}`
+    if (IsNumber(schema.maxProperties)) yield `Object.getOwnPropertyNames(${value}).length <= ${schema.maxProperties}`
     const propertyKeys = globalThis.Object.getOwnPropertyNames(schema.properties)
     if (schema.additionalProperties === false) {
       // Optimization: If the property key length matches the required keys length
@@ -236,10 +236,10 @@ export namespace TypeCompiler {
       // of the property key length. This is because exhaustive testing for values
       // will occur in subsequent property tests.
       if (schema.required && schema.required.length === propertyKeys.length) {
-        yield `(Object.getOwnPropertyNames(${value}).length === ${propertyKeys.length})`
+        yield `Object.getOwnPropertyNames(${value}).length === ${propertyKeys.length}`
       } else {
         const keys = `[${propertyKeys.map((key) => `'${key}'`).join(', ')}]`
-        yield `(Object.getOwnPropertyNames(${value}).every(key => ${keys}.includes(key)))`
+        yield `Object.getOwnPropertyNames(${value}).every(key => ${keys}.includes(key))`
       }
     }
     if (TypeGuard.TSchema(schema.additionalProperties)) {
@@ -276,14 +276,14 @@ export namespace TypeCompiler {
     const local = PushLocal(`new RegExp(/${keyPattern}/)`)
     yield `(Object.getOwnPropertyNames(${value}).every(key => ${local}.test(key)))`
     const expression = CreateExpression(valueSchema, 'value')
-    yield `(Object.values(${value}).every(value => ${expression}))`
+    yield `Object.values(${value}).every(value => ${expression})`
   }
 
   function* Ref(schema: Types.TRef<any>, value: string): IterableIterator<string> {
     // Reference: If we have seen this reference before we can just yield and return
     // the function call. If this isn't the case we defer to visit to generate and
     // set the function for subsequent passes. Consider for refactor.
-    if (state_local_function_names.has(schema.$ref)) return yield `(${CreateFunctionName(schema.$ref)}(${value}))`
+    if (state_local_function_names.has(schema.$ref)) return yield `${CreateFunctionName(schema.$ref)}(${value})`
     if (!state_reference_map.has(schema.$ref)) throw Error(`TypeCompiler.Ref: Cannot de-reference schema with $id '${schema.$ref}'`)
     const reference = state_reference_map.get(schema.$ref)!
     yield* Visit(reference, value)
@@ -291,34 +291,34 @@ export namespace TypeCompiler {
 
   function* Self(schema: Types.TSelf, value: string): IterableIterator<string> {
     const func = CreateFunctionName(schema.$ref)
-    yield `(${func}(${value}))`
+    yield `${func}(${value})`
   }
 
   function* String(schema: Types.TString, value: string): IterableIterator<string> {
     yield `(typeof ${value} === 'string')`
-    if (IsNumber(schema.minLength)) yield `(${value}.length >= ${schema.minLength})`
-    if (IsNumber(schema.maxLength)) yield `(${value}.length <= ${schema.maxLength})`
+    if (IsNumber(schema.minLength)) yield `${value}.length >= ${schema.minLength}`
+    if (IsNumber(schema.maxLength)) yield `${value}.length <= ${schema.maxLength}`
     if (schema.pattern !== undefined) {
       const local = PushLocal(`${new RegExp(schema.pattern)};`)
-      yield `(${local}.test(${value}))`
+      yield `${local}.test(${value})`
     }
     if (schema.format !== undefined) {
-      yield `(format('${schema.format}', ${value}))`
+      yield `format('${schema.format}', ${value})`
     }
   }
 
   function* Tuple(schema: Types.TTuple<any[]>, value: string): IterableIterator<string> {
     yield `(Array.isArray(${value}))`
-    if (schema.items === undefined) return yield `(${value}.length === 0)`
+    if (schema.items === undefined) return yield `${value}.length === 0`
     yield `(${value}.length === ${schema.maxItems})`
     for (let i = 0; i < schema.items.length; i++) {
       const expression = CreateExpression(schema.items[i], `${value}[${i}]`)
-      yield `(${expression})`
+      yield `${expression}`
     }
   }
 
   function* Undefined(schema: Types.TUndefined, value: string): IterableIterator<string> {
-    yield `(${value} === undefined)`
+    yield `${value} === undefined`
   }
 
   function* Union(schema: Types.TUnion<any[]>, value: string): IterableIterator<string> {
@@ -327,23 +327,23 @@ export namespace TypeCompiler {
   }
 
   function* Uint8Array(schema: Types.TUint8Array, value: string): IterableIterator<string> {
-    yield `(${value} instanceof Uint8Array)`
+    yield `${value} instanceof Uint8Array`
     if (IsNumber(schema.maxByteLength)) yield `(${value}.length <= ${schema.maxByteLength})`
     if (IsNumber(schema.minByteLength)) yield `(${value}.length >= ${schema.minByteLength})`
   }
 
   function* Unknown(schema: Types.TUnknown, value: string): IterableIterator<string> {
-    yield '(true)'
+    yield 'true'
   }
 
   function* Void(schema: Types.TVoid, value: string): IterableIterator<string> {
-    yield `(${value} === null)`
+    yield `${value} === null`
   }
 
   function* UserDefined(schema: Types.TSchema, value: string): IterableIterator<string> {
     const schema_key = `schema_key_${state_remote_custom_types.size}`
     state_remote_custom_types.set(schema_key, schema)
-    yield `(custom('${schema[Types.Kind]}', '${schema_key}', ${value}))`
+    yield `custom('${schema[Types.Kind]}', '${schema_key}', ${value})`
   }
 
   function* Visit<T extends Types.TSchema>(schema: T, value: string): IterableIterator<string> {
@@ -355,7 +355,7 @@ export namespace TypeCompiler {
       const name = CreateFunctionName(schema.$id)
       const body = CreateFunction(name, schema, 'value')
       PushFunction(body)
-      yield `(${name}(${value}))`
+      yield `${name}(${value})`
       return
     }
     const anySchema = schema as any
