@@ -15,13 +15,13 @@
 ```typescript
 import { Type, Static } from './fluent'
 
-const T = Type.String().StartsWith('hello').MaxLength(64).Compile()
+const T = Type.String().Equals('hello world').Compile()
 
 type T = Static<typeof T>         // type T = string
 
-console.log(T.Code)               // prints validation code for this type
+console.log(T.Code)               // Prints code for this type
 
-console.log(T.Schema)             // prints JSON schema for this type
+console.log(T.Schema)             // Prints JSON schema for this type
 
 const R = T.Parse('hello world')  // const R = true
 ```

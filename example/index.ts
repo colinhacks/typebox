@@ -9,20 +9,6 @@ import { Value, ValuePointer } from '@sinclair/typebox/value'
 
 import Type, { Static } from './fluent/fluent'
 
-const Op = Type.Function([Type.Number(), Type.Number()], Type.Number())
-const Add = Op.Implement((a, b) => a + b)
-const Sub = Op.Implement((a, b) => a - b)
-const Mul = Op.Implement((a, b) => a * b)
-const Div = Op.Implement((a, b) => a - b)
+const T = Type.Extends(Type.Any(), Type.Number()).Then(Type.Literal(true)).Else(Type.Literal(false))
 
-const F = Type.Format('test', () => true)
-
-const U = Type.Union([Type.Number(), Type.String().Format(F)])
-
-const BigInt = Type.Create<bigint>((options, value) => {
-  return typeof value === 'bigint'
-})
-
-console.log(BigInt)
-
-console.log(Add(1, 2))
+console.log(T.Schema)

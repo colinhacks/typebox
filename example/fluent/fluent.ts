@@ -27,6 +27,7 @@ THE SOFTWARE.
 ---------------------------------------------------------------------------*/
 
 import { TypeCompiler, ValueError, TypeCheck } from '@sinclair/typebox/compiler'
+import { Conditional } from '@sinclair/typebox/conditional'
 import { TypeSystem } from '@sinclair/typebox/system'
 import { TypeGuard } from '@sinclair/typebox/guard'
 import { Custom } from '@sinclair/typebox/custom'
@@ -340,6 +341,8 @@ export class FluentPromise<T extends Types.TSchema> extends FluentType<T> {}
 export class FluentUnion<T extends Types.TUnion> extends FluentType<T> {}
 export class FluentTuple<T extends Types.TTuple> extends FluentType<T> {}
 export class FluentPick<T extends Types.TObject, Properties extends Types.ObjectPropertyKeys<T>[]> extends FluentType<Types.TPick<T, Properties>> {}
+export class FluentUnsafe<T extends Types.TUnsafe<unknown>> extends FluentType<T> {}
+export class FluentVoid<T extends Types.TVoid> extends FluentType<T> {}
 
 // -----------------------------------------------------------------
 // Function
@@ -360,7 +363,29 @@ export class FluentFunctionSignature<T extends Types.TFunction<any[], any>> {
   }
 }
 
-export class FluentUnsafe<T extends Types.TUnsafe<unknown>> extends FluentType<T> {}
+// -----------------------------------------------------------------
+// Extends
+// -----------------------------------------------------------------
+
+export class FluentThen<Left extends Types.TSchema, Right extends Types.TSchema, True extends Types.TSchema> {
+  constructor(
+    private readonly left: Left,
+    private readonly right: Right,
+    private readonly _true: True
+  ) {}
+  public Else<False extends Types.TSchema>(_false: IntoFluent<False>) {
+    const result = Conditional.Extends(this.left, this.right, this._true, _false.Schema)
+    return new FluentType(result)
+  }
+}
+
+export class FluentExtends<Left extends Types.TSchema, Right extends Types.TSchema> {
+  constructor(public readonly left: Left, public readonly right: Right) {}
+  public Then<True extends Types.TSchema>(_true: IntoFluent<True>): FluentThen<Left, Right, True> {
+    return new FluentThen(this.left, this.right, _true.Schema)
+  }
+}
+
 
 // -----------------------------------------------------------------
 // Builder
@@ -377,6 +402,9 @@ export class FluentTypeBuilder {
   }
   public Boolean(options: Types.SchemaOptions = {}) {
     return new FluentBoolean(Types.Type.Boolean(options))
+  }
+  public Extends<Left extends Types.TSchema, Right extends Types.TSchema>(left: IntoFluent<Left>, right: IntoFluent<Right>) {
+    return new FluentExtends(left.Schema, right.Schema)
   }
   public Create<Infer extends unknown = unknown, Options extends unknown = unknown>(callback: (options: Options, value: unknown) => boolean) {
     const type = TypeSystem.CreateType<Infer, Options>(`kind_${kindOrdinal++}`, callback)
@@ -456,6 +484,9 @@ export class FluentTypeBuilder {
     const kind = `kind_${kindOrdinal++}`
     Custom.Set(kind, (_, value) => callback(value))
     return new FluentUnsafe(Types.Type.Unsafe<T>({ [Types.Kind]: kind }))
+  }
+  public Void() {
+    return new FluentVoid(Types.Type.Void())
   }
 }
 
