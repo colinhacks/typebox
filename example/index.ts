@@ -11,14 +11,40 @@ import Type, { Static } from './fluent/fluent'
 
 const F = Type.Format('test', () => true)
 
-const T = Type.Object({
-  x: Type.String().Email(),
-})
+const U = Type.Union([Type.Number(), Type.String().Format(F)])
 
-const U = Type.Union([Type.Number(), Type.String()])
+const T = Type.Recursive(
+  (Node) =>
+    Type.Object({
+      x: Type.String().Email(),
+      into: U,
+      node: Type.Array(Node),
+    }),
+  {
+    $id: 'Node',
+  },
+)
 
-type U = Static<typeof U>
+const R = Type.Record(Type.Union([Type.Literal('y'), Type.Literal('z')]), Type.Number())
+  .Extend({
+    x: Type.Number().Not(Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(3)])),
+  })
+  .Omit(['y'])
+  .Omit(['z'])
+  .Extend({
+    y: T,
+  })
 
-console.log(T.Code)
+function test(value: Static<typeof R>) {
+  value.y.node[0].into
+}
 
-console.log(T.Check(''))
+console.log(R.Schema)
+console.log(R.Code)
+console.log(
+  R.Check({
+    x: 1,
+    y: 2,
+    z: 3,
+  }),
+)

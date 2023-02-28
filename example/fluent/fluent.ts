@@ -28,6 +28,7 @@ THE SOFTWARE.
 
 import { TypeCompiler, ValueError, TypeCheck } from '@sinclair/typebox/compiler'
 import { TypeSystem } from '@sinclair/typebox/system'
+import { TypeGuard } from '@sinclair/typebox/guard'
 import { Custom } from '@sinclair/typebox/custom'
 import { Value } from '@sinclair/typebox/value'
 import * as Types from '@sinclair/typebox'
@@ -368,21 +369,21 @@ export class FluentUnsafe<T extends Types.TUnsafe<unknown>> extends FluentType<T
 let kindOrdinal = 0
 
 export class FluentTypeBuilder {
-  public Any() {
-    return new FluentAny(Types.Type.Any())
+  public Any(options: Types.SchemaOptions = {}) {
+    return new FluentAny(Types.Type.Any(options))
   }
-  public Array<T extends Types.TSchema>(item: FluentType<T>) {
-    return new FluentArray(Types.Type.Array(item.Schema))
+  public Array<T extends Types.TSchema>(item: FluentType<T>, options: Types.ArrayOptions = {}) {
+    return new FluentArray(Types.Type.Array(item.Schema, options))
   }
-  public Boolean() {
-    return new FluentBoolean(Types.Type.Boolean())
+  public Boolean(options: Types.SchemaOptions = {}) {
+    return new FluentBoolean(Types.Type.Boolean(options))
   }
   public Create<Infer extends unknown = unknown, Options extends unknown = unknown>(callback: (options: Options, value: unknown) => boolean) {
     const type = TypeSystem.CreateType<Infer, Options>(`kind_${kindOrdinal++}`, callback)
     return (options: Partial<Options>) => new FluentUnsafe(type(options))
   }
-  public Date() {
-    return new FluentDate(Types.Type.Date())
+  public Date(options: Types.DateOptions = {}) {
+    return new FluentDate(Types.Type.Date(options))
   }
   public Function<P extends Types.TSchema[], R extends Types.TSchema>(params: IntoFluentTuple<P>, returns: IntoFluent<R>) {
     return new FluentFunctionSignature(Types.Type.Function(params.map((param) => param.Schema) as [...P], returns.Schema))
@@ -391,40 +392,47 @@ export class FluentTypeBuilder {
     TypeSystem.CreateFormat(format, callback)
     return format
   }
-  public Integer() {
+  public Integer(options: Types.NumericOptions = {}) {
     return new FluentInteger(Types.Type.Integer())
   }
   public Intersect<T extends Types.TObject[]>(objects: [...IntoFluentTuple<T>]) {
     return new FluentObject(Types.Type.Intersect(objects.map((type) => type.Schema))) as FluentObject<Types.TIntersect<T>>
   }
-  public Null() {
+  public Null(options: Types.SchemaOptions = {}) {
     return new FluentNull(Types.Type.Null())
   }
-  public Not<N extends Types.TSchema, T extends Types.TSchema>(not: IntoFluent<N>, type: IntoFluent<T>) {
-    return new FluentNot(Types.Type.Not(not.Schema, type.Schema))
+  public Not<N extends Types.TSchema, T extends Types.TSchema>(not: IntoFluent<N>, type: IntoFluent<T>, options: Types.SchemaOptions = {}) {
+    return new FluentNot(Types.Type.Not(not.Schema, type.Schema, options))
   }
-  public Never() {
-    return new FluentNever(Types.Type.Never())
+  public Never(options: Types.SchemaOptions = {}) {
+    return new FluentNever(Types.Type.Never(options))
   }
-  public Number() {
-    return new FluentNumber(Types.Type.Number())
+  public Number(options: Types.NumericOptions = {}) {
+    return new FluentNumber(Types.Type.Number(options))
   }
-  public Object<T extends Types.TProperties>(properties: IntoFluentProperties<T>) {
+  public Object<T extends Types.TProperties>(properties: IntoFluentProperties<T>, options: Types.ObjectOptions = {}) {
     const mapped = Object.keys(properties).reduce((acc, key) => ({ ...acc, [key]: properties[key].Schema }), {} as Types.TProperties)
-    return new FluentObject(Types.Type.Object(mapped)) as FluentObject<Types.TObject<T>>
+    return new FluentObject(Types.Type.Object(mapped, options)) as FluentObject<Types.TObject<T>>
   }
-  public Literal<T extends Types.TLiteralValue>(value: T) {
-    return new FluentLiteral(Types.Type.Literal(value))
+  public Literal<T extends Types.TLiteralValue>(value: T, options: Types.SchemaOptions = {}) {
+    return new FluentLiteral(Types.Type.Literal(value, options))
   }
-  public Promise<T extends Types.TSchema>(type: IntoFluent<T>) {
-    return new FluentPromise(Types.Type.Promise(type.Schema))
+  public Promise<T extends Types.TSchema>(type: IntoFluent<T>, options: Types.SchemaOptions = {}) {
+    return new FluentPromise(Types.Type.Promise(type.Schema, options))
   }
-  public Record<T extends Types.TSchema>(type: IntoFluent<T>): FluentRecord<T> {
-    return new FluentRecord(Types.Type.Record(Types.Type.String(), type.Schema))
+
+  public Record<K extends Types.TUnion<Types.TLiteral[]>, T extends Types.TSchema>(key: IntoFluent<K>, schema: IntoFluent<T>, options?: Types.ObjectOptions): FluentObject<Types.TObject<Types.TRecordProperties<K, T>>>
+  public Record<K extends Types.TString | Types.TNumeric, T extends Types.TSchema>(key: IntoFluent<K>, schema: IntoFluent<T>, options?: Types.ObjectOptions): FluentRecord<Types.TRecord<K, T>>
+  public Record(...args: any[]): any {
+    if(TypeGuard.TUnion(args[0].Schema) && args[0].Schema.anyOf.every((schema: Types.TSchema) => TypeGuard.TLiteral(schema))) {
+      return new FluentObject(Types.Type.Record(args[0].Schema as any, args[1].Schema) as any)
+    } else {
+      return new FluentRecord(Types.Type.Record(args[0].Schema as any, args[1].Schema) as any)
+    }
   }
-  public Recursive<T extends Types.TSchema>(callback: (self: FluentSelf) => FluentType<T>) {
+  public Recursive<T extends Types.TSchema>(callback: (self: FluentSelf) => FluentType<T>, options: Types.SchemaOptions = {}) {
     // prettier-ignore
-    return new FluentRecursive(Types.Type.Recursive((Self) => callback(new FluentSelf(Self)).Schema))
+    return new FluentRecursive(Types.Type.Recursive((Self) => callback(new FluentSelf(Self)).Schema, options))
   }
   public String() {
     return new FluentString(Types.Type.String())
