@@ -6,9 +6,13 @@ import { Conditional } from '@sinclair/typebox/conditional'
 import { Format } from '@sinclair/typebox/format'
 import { Custom } from '@sinclair/typebox/custom'
 import { Value, ValuePointer } from '@sinclair/typebox/value'
-import { Type, Kind, Static, TSchema } from '@sinclair/typebox'
 
-const T = Type.Not(Type.Union([Type.Literal('hello'), Type.Literal('world')]), Type.String())
+import Type, { Static } from './fluent/fluent'
 
-const C = TypeCompiler.Compile(T)
-console.log(C.Check(''))
+const F = Type.Format('test', () => true)
+
+const T = Type.String().Format(F)
+
+console.log(T.Code)
+
+console.log(T.Check(''))
