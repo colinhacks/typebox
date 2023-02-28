@@ -747,7 +747,7 @@ export class TypeBuilder {
     return this.Create({ ...options, [Kind]: 'Union', [Hint]: 'KeyOf', anyOf: items })
   }
 
-  /** `Standard` Creates a literal type. */
+  /** `Standard` Creates a literal type */
   public Literal<T extends TLiteralValue>(value: T, options: SchemaOptions = {}): TLiteral<T> {
     return this.Create({ ...options, [Kind]: 'Literal', const: value, type: typeof value as 'string' | 'number' | 'boolean' })
   }
@@ -764,8 +764,17 @@ export class TypeBuilder {
     })
   }
 
-  /** `Standard` Creates a not type. */
-  public Not<N extends TSchema, T extends TSchema>(not: N, schema: T, options: SchemaOptions = {}): TNot<N, T> {
+  /** `Standard` Creates a not type */
+  public Not<N extends TSchema, T extends TSchema>(not: N, schema: T, options?: SchemaOptions): TNot<N, T>
+  /** `Standard` Creates a not type */
+  public Not<N extends TSchema, T extends TSchema>(not: N, options?: SchemaOptions): TNot<N, TUnknown>
+  public Not(...args: any[]): any {
+    // prettier-ignore
+    const [not, schema, options] = 
+      (args.length === 3) ? [args[0], args[1], args[2]] :
+      (args.length === 2) ? ((Kind in args[1]) ? [args[0], args[1], {}] : [args[0], { [Kind]: 'Unknown' }, args[1]]) :
+      (args.length === 1) ? [args[0],  { [Kind]: 'Unknown' }, {}] :
+      [ { [Kind]: 'Unknown' }, { [Kind]: 'Unknown' }, {}]
     return this.Create({ ...options, [Kind]: 'Not', allOf: [{ not }, schema] })
   }
 
@@ -870,7 +879,7 @@ export class TypeBuilder {
     return this.Create({ ...options, [Kind]: 'Promise', type: 'object', instanceOf: 'Promise', item })
   }
 
-  /** `Standard` Creates an object whose properties are derived from the given string literal union. */
+  /** `Standard` Creates an object whose properties are derived from the given string literal union */
   public Record<K extends TUnion<TLiteral[]>, T extends TSchema>(key: K, schema: T, options?: ObjectOptions): TObject<TRecordProperties<K, T>>
 
   /** `Standard` Creates a record type */
@@ -906,7 +915,7 @@ export class TypeBuilder {
     return this.Create({ ...options, ...self } as any)
   }
 
-  /** `Standard` Creates a reference type. The referenced type must contain a $id. */
+  /** `Standard` Creates a reference type. The referenced type must contain a $id */
   public Ref<T extends TSchema>(schema: T, options: SchemaOptions = {}): TRef<T> {
     if (schema.$id === undefined) throw Error('TypeBuilder.Ref: Referenced schema must specify an $id')
     return this.Create({ ...options, [Kind]: 'Ref', $ref: schema.$id! })

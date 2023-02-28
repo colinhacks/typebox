@@ -323,7 +323,7 @@ export namespace TypeCompiler {
 
   function* Union(schema: Types.TUnion<any[]>, value: string): IterableIterator<string> {
     const expressions = schema.anyOf.map((schema: Types.TSchema) => CreateExpression(schema, value))
-    yield `(${expressions.join(' || ')})`
+    yield `${expressions.join(' || ')}`
   }
 
   function* Uint8Array(schema: Types.TUint8Array, value: string): IterableIterator<string> {
