@@ -364,9 +364,8 @@ export class FluentFunctionSignature<T extends Types.TFunction<any[], any>> {
 }
 
 // -----------------------------------------------------------------
-// Extends
+// Conditional
 // -----------------------------------------------------------------
-
 export class FluentThen<Left extends Types.TSchema, Right extends Types.TSchema, True extends Types.TSchema> {
   constructor(
     private readonly left: Left,
@@ -374,8 +373,7 @@ export class FluentThen<Left extends Types.TSchema, Right extends Types.TSchema,
     private readonly _true: True
   ) {}
   public Else<False extends Types.TSchema>(_false: IntoFluent<False>) {
-    const result = Conditional.Extends(this.left, this.right, this._true, _false.Schema)
-    return new FluentType(result)
+    return new FluentType(Conditional.Extends(this.left, this.right, this._true, _false.Schema))
   }
 }
 
@@ -385,7 +383,6 @@ export class FluentExtends<Left extends Types.TSchema, Right extends Types.TSche
     return new FluentThen(this.left, this.right, _true.Schema)
   }
 }
-
 
 // -----------------------------------------------------------------
 // Builder
