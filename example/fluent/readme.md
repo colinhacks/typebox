@@ -2,7 +2,7 @@
 
 <h1>FluentBox</h1>
 
-<p>Fluent Type Builder for TypeBox</p>
+<p>Fluent Types for TypeBox</p>
 	
 <img src="./fluent.png" />
 
