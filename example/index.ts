@@ -1,27 +1,21 @@
-import { Codegen } from '@sinclair/typebox/codegen'
-import { TypeSystem } from '@sinclair/typebox/system'
-import { TypeCompiler } from '@sinclair/typebox/compiler'
-import { TypeGuard } from '@sinclair/typebox/guard'
-import { Conditional } from '@sinclair/typebox/conditional'
-import { Format } from '@sinclair/typebox/format'
-import { Custom } from '@sinclair/typebox/custom'
-import { Value, ValuePointer } from '@sinclair/typebox/value'
+import Type, { FluentType, Static, Value } from './typemap/typemap'
 
-import Type, { Static } from './typemap/typemap'
+console.log(Value.Diff(1, 2))
 
-const T = Type.Intersect([
-  Type.Object({
-    x: Type.Number(),
-  }),
-  Type.Object({
-    b: Type.Number().LessThan(10).Optional(),
-  }),
-])
+function Vector<T extends FluentType>(type: T) {
+  return Type.Object({
+    x: type,
+    y: type,
+    z: type,
+  })
+}
 
-const M = T.Extend({
-  x: Type.String(),
-})
+const A = Vector(Type.String().Email()).KeyOf()
 
-type T = Static<typeof M>
+const P = Type.Record(A, Vector(Vector(Vector(Type.Number()))))
 
-console.log(T.Schema)
+const C = Type.Extends(Type.Any(), Type.String()).Then(P).Else(Type.Literal(true))
+
+console.log(C.Schema)
+
+function test(value: Static<typeof P>) {}

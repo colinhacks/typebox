@@ -378,7 +378,7 @@ export class FluentThen<Left extends Types.TSchema, Right extends Types.TSchema,
 }
 
 export class FluentExtends<Left extends Types.TSchema, Right extends Types.TSchema> {
-  constructor(public readonly left: Left, public readonly right: Right) {}
+  constructor(private readonly left: Left, private readonly right: Right) {}
   public Then<True extends Types.TSchema>(_true: IntoFluent<True>): FluentThen<Left, Right, True> {
     return new FluentThen(this.left, this.right, _true.Schema)
   }
@@ -490,5 +490,7 @@ export class FluentTypeBuilder {
 export type Static<T> = T extends FluentType<infer S> ? Types.Static<S> : unknown
 
 export const Type = new FluentTypeBuilder()
+
+export { Value }
 
 export default Type
