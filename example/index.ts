@@ -11,7 +11,13 @@ import Type, { Static } from './fluent/fluent'
 
 const F = Type.Format('test', () => true)
 
-const T = Type.String().Format(F)
+const T = Type.Object({
+  x: Type.String().Email(),
+})
+
+const U = Type.Union([Type.Number(), Type.String()])
+
+type U = Static<typeof U>
 
 console.log(T.Code)
 

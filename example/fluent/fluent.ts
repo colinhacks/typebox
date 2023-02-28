@@ -161,7 +161,7 @@ export class FluentType<T extends Types.TSchema = Types.TSchema> {
   }
 }
 export class FluentObject<T extends Types.TObject = Types.TObject> extends FluentType<T> {
-  public And<U extends Types.TObject>(type: IntoFluent<U>) {
+  public Intersect<U extends Types.TObject>(type: IntoFluent<U>) {
     return new FluentIntersect(Types.Type.Intersect([this.Schema, type.Schema]))
   }
   public Extend<U extends Types.TProperties>(properties: IntoFluentProperties<U>) {
@@ -189,10 +189,10 @@ export class FluentObject<T extends Types.TObject = Types.TObject> extends Fluen
   }
 }
 export class FluentArray<T extends Types.TArray<Types.TSchema>> extends FluentType<T> {
-  public Min(n: number) {
+  public MinLength(n: number) {
     return new FluentArray(Types.Type.Array({ ...this.Schema, maxItems: n }))
   }
-  public Max(n: number) {
+  public MaxLength(n: number) {
     return new FluentArray(Types.Type.Array({ ...this.Schema, maxItems: n }))
   }
   public Length(n: number) {
@@ -202,45 +202,48 @@ export class FluentArray<T extends Types.TArray<Types.TSchema>> extends FluentTy
     return new FluentArray(Types.Type.Array({ ...this.Schema, uniqueItems: true }))
   }
 }
-export class FluentString extends FluentType<Types.TString> {
+export class FluentString<Format extends string = string> extends FluentType<Types.TString<Format>> {
   public Equals(n: string) {
-    return new FluentString(Types.Type.String({ ...this.Schema, pattern: `^${n}$` }))
+    return new FluentString<Format>(Types.Type.String({ ...this.Schema, pattern: `^${n}$` }))
   }
   public Includes(n: string) {
-    return new FluentString(Types.Type.String({ ...this.Schema, pattern: n }))
+    return new FluentString<Format>(Types.Type.String({ ...this.Schema, pattern: n }))
   }
   public StartsWith(n: string) {
-    return new FluentString(Types.Type.String({ ...this.Schema, pattern: `^${n}` }))
+    return new FluentString<Format>(Types.Type.String({ ...this.Schema, pattern: `^${n}` }))
   }
   public EndsWith(n: string) {
-    return new FluentString(Types.Type.String({ ...this.Schema, pattern: `${n}$` }))
+    return new FluentString<Format>(Types.Type.String({ ...this.Schema, pattern: `${n}$` }))
   }
   public MinLength(n: number) {
-    return new FluentString(Types.Type.String({ ...this.Schema, minLength: n }))
+    return new FluentString<Format>(Types.Type.String({ ...this.Schema, minLength: n }))
   }
   public MaxLength(n: number) {
-    return new FluentString(Types.Type.String({ ...this.Schema, maxLength: n }))
+    return new FluentString<Format>(Types.Type.String({ ...this.Schema, maxLength: n }))
   }
   public Length(n: number) {
-    return new FluentString(Types.Type.String({ ...this.Schema, maxLength: n, minLength: n }))
+    return new FluentString<Format>(Types.Type.String({ ...this.Schema, maxLength: n, minLength: n }))
   }
-  public Format(n: string) {
-    return new FluentString(Types.Type.String({ ...this.Schema, format: n }))
+  public Pattern(n: string) {
+    return new FluentString<Format>(Types.Type.String({ ...this.Schema, pattern: n }))
+  }
+  public Format<F extends Format>(n: F) {
+    return new FluentString<F>(Types.Type.String({ ...this.Schema, format: n }))
   }
   public Email() {
-    return new FluentString(Types.Type.String({ ...this.Schema, format: 'email' }))
+    return new FluentString<'email'>(Types.Type.String({ ...this.Schema, format: 'email' }))
   }
   public Uuid() {
-    return new FluentString(Types.Type.String({ ...this.Schema, format: 'uuid' }))
+    return new FluentString<'uuid'>(Types.Type.String({ ...this.Schema, format: 'uuid' }))
   }
   public Url() {
-    return new FluentString(Types.Type.String({ ...this.Schema, format: 'url' }))
+    return new FluentString<'url'>(Types.Type.String({ ...this.Schema, format: 'url' }))
   }
   public Ipv6() {
-    return new FluentString(Types.Type.String({ ...this.Schema, format: 'ipv6' }))
+    return new FluentString<'ipv6'>(Types.Type.String({ ...this.Schema, format: 'ipv6' }))
   }
   public Ipv4() {
-    return new FluentString(Types.Type.String({ ...this.Schema, format: 'ipv4' }))
+    return new FluentString<'ipv4'>(Types.Type.String({ ...this.Schema, format: 'ipv4' }))
   }
 }
 export class FluentNumber extends FluentType<Types.TNumber> {
