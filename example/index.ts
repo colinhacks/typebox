@@ -7,8 +7,21 @@ import { Format } from '@sinclair/typebox/format'
 import { Custom } from '@sinclair/typebox/custom'
 import { Value, ValuePointer } from '@sinclair/typebox/value'
 
-import Type, { Static } from './fluent/fluent'
+import Type, { Static } from './typemap/typemap'
 
-const T = Type.Extends(Type.Any(), Type.Number()).Then(Type.Literal(true)).Else(Type.Literal(false))
+const T = Type.Intersect([
+  Type.Object({
+    x: Type.Number(),
+  }),
+  Type.Object({
+    b: Type.Number().LessThan(10).Optional(),
+  }),
+])
+
+const M = T.Extend({
+  x: Type.String(),
+})
+
+type T = Static<typeof M>
 
 console.log(T.Schema)
