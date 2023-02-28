@@ -380,7 +380,7 @@ export class FluentTypeBuilder {
   }
   public Create<Infer extends unknown = unknown, Options extends unknown = unknown>(callback: (options: Options, value: unknown) => boolean) {
     const type = TypeSystem.CreateType<Infer, Options>(`kind_${kindOrdinal++}`, callback)
-    return (options: Partial<Options>) => new FluentUnsafe(type(options))
+    return function UserFluentType(options: Partial<Options> = {}) {return new FluentUnsafe(type(options)) }
   }
   public Date(options: Types.DateOptions = {}) {
     return new FluentDate(Types.Type.Date(options))
