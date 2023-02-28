@@ -1,6 +1,6 @@
 /*--------------------------------------------------------------------------
 
-zodbox
+@sinclair/typebox/fluent
 
 The MIT License (MIT)
 
