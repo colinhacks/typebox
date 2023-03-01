@@ -37,6 +37,3 @@ const R = T.Parse('hello world')  // type R = string
 ## Overview
 
 License MIT
-
-## Features
-

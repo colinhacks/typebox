@@ -1,13 +1,15 @@
-import Type, { Static } from 'typemap'
+import { Kind, TSchema, SchemaOptions, IntersectReduce, IntersectEvaluate } from '@sinclair/typebox'
 
-const T = Type.String().Default('hello')
+export interface IntersectAllOfOptions extends SchemaOptions {
+  unevaluatedProperties?: boolean
+}
 
-const M = Type.Object({
-  x: Type.Number(),
-}).Default({
-  x: 1,
-})
+export interface TAnd<T extends TSchema[] = []> extends TSchema {
+  [Kind]: 'TAnd'
+  static: IntersectReduce<unknown, IntersectEvaluate<T, []>>
+  allOf: T
+}
 
-type X = Static<typeof M>
-
-const S = Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(3)])
+function And<T extends TSchema[] = []>(allOf: T): TAnd<T> {
+  return { [Kind]: 'And', allOf } as any as TAnd<T>
+}

@@ -67,12 +67,12 @@ export class FluentError extends Error {
 // -----------------------------------------------------------------
 // Assert
 // -----------------------------------------------------------------
-export interface FluentAssert<T extends Types.TSchema> {
+export interface TypeAssert<T extends Types.TSchema> {
   Check(value: unknown): value is Types.Static<T>
   Errors(value: unknown): IterableIterator<ValueError>
   Code(): string
 }
-export class FluentAssertDynamic<T extends Types.TSchema> implements FluentAssert<T> {
+export class TypeAssertDynamic<T extends Types.TSchema> implements TypeAssert<T> {
   readonly #schema: T
   constructor(schema: T) {
     this.#schema = schema
@@ -87,7 +87,7 @@ export class FluentAssertDynamic<T extends Types.TSchema> implements FluentAsser
     return TypeCompiler.Code(this.#schema, [])
   }
 }
-export class FluentAssertCompiled<T extends Types.TSchema> implements FluentAssert<T> {
+export class TypeAssertCompiled<T extends Types.TSchema> implements TypeAssert<T> {
   readonly #typecheck: TypeCheck<T>
   constructor(schema: T) {
     this.#typecheck = TypeCompiler.Compile(schema)
@@ -102,14 +102,15 @@ export class FluentAssertCompiled<T extends Types.TSchema> implements FluentAsse
     return this.#typecheck.Code()
   }
 }
+
 // -----------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------
 export class FluentType<T extends Types.TSchema = Types.TSchema> {
-  #assert: FluentAssert<T>
+  #assert: TypeAssert<T>
   #schema: T
   constructor(schema: T) {
-    this.#assert = new FluentAssertDynamic(schema)
+    this.#assert = new TypeAssertDynamic(schema)
     this.#schema = schema
   }
   public Check(value: unknown): value is Types.Static<T> {
@@ -158,7 +159,7 @@ export class FluentType<T extends Types.TSchema = Types.TSchema> {
   }
   public Compile(): this {
     const compiled = new FluentType(this.#schema)
-    compiled.#assert = new FluentAssertCompiled(this.#schema)
+    compiled.#assert = new TypeAssertCompiled(this.#schema)
     return compiled as this
   }
 }
