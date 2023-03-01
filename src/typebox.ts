@@ -84,6 +84,7 @@ export type TAnySchema =
   | TEnum
   | TFunction
   | TInteger
+  | TIntersect
   | TLiteral
   | TNull
   | TNumber
@@ -244,9 +245,14 @@ export type IntersectProperties<T extends readonly TObject[]> = {
   [K in keyof T]: T[K] extends TObject<infer P> ? P : {}
 }
 
-export interface TIntersect<T extends TObject[] = TObject[]> extends TObject {
-  static: IntersectReduce<unknown, IntersectEvaluate<T, this['params']>>
-  properties: IntersectReduce<unknown, IntersectProperties<T>>
+export interface IntersectOptions extends SchemaOptions {
+  unevaluatedProperties?: boolean
+}
+
+export interface TIntersect<T extends TSchema[] = []> extends TSchema, IntersectOptions {
+  [Kind]: 'Intersect'
+  static: IntersectReduce<unknown, IntersectEvaluate<T, []>>
+  allOf: T
 }
 
 // --------------------------------------------------------------------------
@@ -284,6 +290,28 @@ export interface TNever extends TSchema {
   static: never
   allOf: [{ type: 'boolean'; const: false }, { type: 'boolean'; const: true }]
 }
+
+// -------------------------------------------------------------------------------------
+// Normalize
+// -------------------------------------------------------------------------------------
+
+export type NormalizeObjectIntersect<T extends TIntersect<TObject[]>> = UnionToIntersect<
+  {
+    [K in keyof T['allOf']]: T['allOf'][K] extends infer P ? (P extends TObject ? P['properties'] : never) : never
+  }[number]
+> extends infer O
+  ? O extends TProperties
+    ? TObject<{ [K in keyof O]: O[K] }>
+    : never
+  : never
+
+export type NormalizeObject<T extends TObject> = T
+
+export type Normalize<T> = T extends TIntersect<TObject[]> ? NormalizeObjectIntersect<T> : T extends TObject ? NormalizeObject<T> : never
+
+export type NormalizeKeyOf<T extends Normalizable> = keyof Normalize<T>['properties']
+
+export type Normalizable = TIntersect<TObject[]> | TObject
 
 // --------------------------------------------------------------------------
 // Not
@@ -366,42 +394,30 @@ export interface TObject<T extends TProperties = TProperties> extends TSchema, O
   required?: string[]
 }
 
-// --------------------------------------------------------------------------
+// -------------------------------------------------------------------
 // Omit
-// --------------------------------------------------------------------------
-
-export interface TOmit<T extends TObject, Properties extends ObjectPropertyKeys<T>[]> extends TObject, ObjectOptions {
-  static: Omit<Static<T, this['params']>, Properties[number]>
-  properties: T extends TObject ? Omit<T['properties'], Properties[number]> : never
-}
+// -------------------------------------------------------------------
+export type TOmit<T extends TObject, K extends keyof any> = TPick<T, Exclude<keyof T['properties'], K>>
 
 // --------------------------------------------------------------------------
 // Partial
 // --------------------------------------------------------------------------
-
-export interface TPartial<T extends TObject> extends TObject {
-  static: Partial<Static<T, this['params']>>
-  properties: {
-    // prettier-ignore
-    [K in keyof T['properties']]: 
-      T['properties'][K] extends TReadonlyOptional<infer U> ? TReadonlyOptional<U> : 
-      T['properties'][K] extends TReadonly<infer U>         ? TReadonlyOptional<U> : 
-      T['properties'][K] extends TOptional<infer U>         ? TOptional<U> : 
-      TOptional<T['properties'][K]>
-  }
-}
+export type TPartial<T extends TObject> =
+  TObject<{
+  // prettier-ignore
+  [K in keyof T['properties']]: 
+    T['properties'][K] extends TReadonlyOptional<infer U> ? TReadonlyOptional<U> : 
+    T['properties'][K] extends TReadonly<infer U>         ? TReadonlyOptional<U> : 
+    T['properties'][K] extends TOptional<infer U>         ? TOptional<U> : 
+    TOptional<T['properties'][K]>
+}>
 
 // --------------------------------------------------------------------------
 // Pick
 // --------------------------------------------------------------------------
 
-// export interface TPick<T extends TObject, Properties extends ObjectPropertyKeys<T>[]> extends TObject, ObjectOptions {
-//   static: Pick<Static<T, this['params']>, Properties[number]>
-//   properties: ObjectProperties<T>
-// }
-
-export type TPick<T extends TObject, Properties extends ObjectPropertyKeys<T>[]> = TObject<{
-  [K in Properties[number]]: T['properties'][K]
+export type TPick<T extends TObject, K extends keyof any> = TObject<{
+  [IK in K]: IK extends keyof T['properties'] ? T['properties'][IK] : never
 }>
 
 // --------------------------------------------------------------------------
@@ -459,18 +475,15 @@ export interface TRef<T extends TSchema = TSchema> extends TSchema {
 // --------------------------------------------------------------------------
 // Required
 // --------------------------------------------------------------------------
-
-export interface TRequired<T extends TObject | TRef<TObject>> extends TObject {
-  static: Required<Static<T, this['params']>>
-  properties: {
-    // prettier-ignore
-    [K in keyof T['properties']]: 
-      T['properties'][K] extends TReadonlyOptional<infer U> ? TReadonly<U> :  
-      T['properties'][K] extends TReadonly<infer U>         ? TReadonly<U> :
-      T['properties'][K] extends TOptional<infer U>         ? U :  
-      T['properties'][K]
-  }
-}
+export type TRequired<T extends TObject> =
+  TObject<{
+  // prettier-ignore
+  [K in keyof T['properties']]: 
+    T['properties'][K] extends TReadonlyOptional<infer U> ? TReadonly<U> :  
+    T['properties'][K] extends TReadonly<infer U>         ? TReadonly<U> :
+    T['properties'][K] extends TOptional<infer U>         ? U :  
+    T['properties'][K]
+}>
 
 // --------------------------------------------------------------------------
 // String
@@ -715,35 +728,14 @@ export class TypeBuilder {
   }
 
   /** `Standard` Creates a intersect type. */
-  public Intersect<T extends TObject[]>(objects: [...T], options: ObjectOptions = {}): TIntersect<T> {
-    const isOptional = (schema: TSchema) => (schema[Modifier] && schema[Modifier] === 'Optional') || schema[Modifier] === 'ReadonlyOptional'
-    const [required, optional] = [new Set<string>(), new Set<string>()]
-    for (const object of objects) {
-      for (const [key, schema] of Object.entries(object.properties)) {
-        if (isOptional(schema)) optional.add(key)
-      }
-    }
-    for (const object of objects) {
-      for (const key of Object.keys(object.properties)) {
-        if (!optional.has(key)) required.add(key)
-      }
-    }
-    const properties = {} as Record<string, any>
-    for (const object of objects) {
-      for (const [key, schema] of Object.entries(object.properties)) {
-        properties[key] = properties[key] === undefined ? schema : { [Kind]: 'Union', anyOf: [properties[key], { ...schema }] }
-      }
-    }
-    if (required.size > 0) {
-      return this.Create({ ...options, [Kind]: 'Object', type: 'object', properties, required: [...required] })
-    } else {
-      return this.Create({ ...options, [Kind]: 'Object', type: 'object', properties })
-    }
+  public Intersect<T extends TSchema[]>(allOf: [...T], options: IntersectOptions = {}): TIntersect<T> {
+    return this.Create({ ...options, [Kind]: 'Intersect', allOf })
   }
 
   /** `Standard` Creates a keyof type */
-  public KeyOf<T extends TObject>(object: T, options: SchemaOptions = {}): TKeyOf<T> {
-    const items = Object.keys(object.properties).map((key) => this.Create({ ...options, [Kind]: 'Literal', type: 'string', const: key }))
+  public KeyOf<T extends Normalizable>(schema: T, options: SchemaOptions = {}): TKeyOf<Normalize<T>> {
+    const normal = this.Normalize(schema)
+    const items = Object.keys(normal.properties).map((key) => this.Create({ ...options, [Kind]: 'Literal', type: 'string', const: key }))
     return this.Create({ ...options, [Kind]: 'Union', [Hint]: 'KeyOf', anyOf: items })
   }
 
@@ -805,23 +797,24 @@ export class TypeBuilder {
   }
 
   /** `Standard` Creates a new object type whose keys are omitted from the given source type */
-  public Omit<T extends TObject, K extends TUnion<TLiteral<string>[]>>(schema: T, keys: K, options?: ObjectOptions): TOmit<T, UnionStringLiteralToTuple<K>>
+  public Omit<T extends Normalizable, K extends TUnion<TLiteral<string>[]>>(schema: T, keys: K, options?: ObjectOptions): TOmit<Normalize<T>, Static<K>>
 
   /** `Standard` Creates a new object type whose keys are omitted from the given source type */
-  public Omit<T extends TObject, K extends ObjectPropertyKeys<T>[]>(schema: T, keys: readonly [...K], options?: ObjectOptions): TOmit<T, K>
+  public Omit<T extends Normalizable, K extends NormalizeKeyOf<T>[]>(schema: T, keys: readonly [...K], options?: ObjectOptions): TOmit<Normalize<T>, K[number]>
 
   /** `Standard` Creates a new object type whose keys are omitted from the given source type */
   public Omit(schema: any, keys: any, options: ObjectOptions = {}) {
+    const normal = this.Normalize(schema)
     const select: readonly string[] = keys[Kind] === 'Union' ? keys.anyOf.map((schema: TLiteral) => schema.const) : keys
-    const next = { ...this.Clone(schema), ...options, [Hint]: 'Omit' }
-    if (next.required) {
-      next.required = next.required.filter((key: string) => !select.includes(key as any))
-      if (next.required.length === 0) delete next.required
+    const object = { ...this.Clone(normal), ...options, [Hint]: 'Omit' }
+    if (object.required) {
+      object.required = object.required.filter((key: string) => !select.includes(key as any))
+      if (object.required.length === 0) delete object.required
     }
-    for (const key of Object.keys(next.properties)) {
-      if (select.includes(key as any)) delete next.properties[key]
+    for (const key of Object.keys(object.properties)) {
+      if (select.includes(key as any)) delete object.properties[key]
     }
-    return this.Create(next)
+    return this.Create(object)
   }
 
   /** `Extended` Creates a tuple type from this functions parameters */
@@ -830,8 +823,9 @@ export class TypeBuilder {
   }
 
   /** `Standard` Creates an object type whose properties are all optional */
-  public Partial<T extends TObject>(schema: T, options: ObjectOptions = {}): TPartial<T> {
-    const next = { ...this.Clone(schema), ...options, [Hint]: 'Partial' }
+  public Partial<T extends Normalizable>(schema: T, options: ObjectOptions = {}): TPartial<Normalize<T>> {
+    const normal = this.Normalize(schema)
+    const next = { ...this.Clone(normal), ...options, [Hint]: 'Partial' }
     delete next.required
     for (const key of Object.keys(next.properties)) {
       const property = next.properties[key]
@@ -855,23 +849,24 @@ export class TypeBuilder {
   }
 
   /** `Standard` Creates a new object type whose keys are picked from the given source type */
-  public Pick<T extends TObject, K extends TUnion<TLiteral<string>[]>>(schema: T, keys: K, options?: ObjectOptions): TPick<T, UnionStringLiteralToTuple<K>>
+  public Pick<T extends Normalizable, K extends TUnion<TLiteral<string>[]>>(schema: T, keys: K, options?: ObjectOptions): TPick<Normalize<T>, Static<K>>
 
   /** `Standard` Creates a new object type whose keys are picked from the given source type */
-  public Pick<T extends TObject, K extends ObjectPropertyKeys<T>[]>(schema: T, keys: readonly [...K], options?: ObjectOptions): TPick<T, K>
+  public Pick<T extends Normalizable, K extends ObjectPropertyKeys<T>[]>(schema: T, keys: readonly [...K], options?: ObjectOptions): TPick<Normalize<T>, K[number]>
 
   /** `Standard` Creates a new object type whose keys are picked from the given source type */
-  public Pick<T extends TObject, K extends ObjectPropertyKeys<T>[]>(schema: any, keys: any, options: ObjectOptions = {}) {
+  public Pick(schema: any, keys: any, options: ObjectOptions = {}) {
+    const normal = this.Normalize(schema)
     const select: readonly string[] = keys[Kind] === 'Union' ? keys.anyOf.map((schema: TLiteral) => schema.const) : keys
-    const next = { ...this.Clone(schema), ...options, [Hint]: 'Pick' }
-    if (next.required) {
-      next.required = next.required.filter((key: any) => select.includes(key))
-      if (next.required.length === 0) delete next.required
+    const object = { ...this.Clone(normal), ...options, [Hint]: 'Pick' }
+    if (object.required) {
+      object.required = object.required.filter((key: any) => select.includes(key))
+      if (object.required.length === 0) delete object.required
     }
-    for (const key of Object.keys(next.properties)) {
-      if (!select.includes(key as any)) delete next.properties[key]
+    for (const key of Object.keys(object.properties)) {
+      if (!select.includes(key as any)) delete object.properties[key]
     }
-    return this.Create(next)
+    return this.Create(object)
   }
 
   /** `Extended` Creates a Promise type */
@@ -927,11 +922,12 @@ export class TypeBuilder {
   }
 
   /** `Standard` Creates an object type whose properties are all required */
-  public Required<T extends TObject>(schema: T, options: SchemaOptions = {}): TRequired<T> {
-    const next = { ...this.Clone(schema), ...options, [Hint]: 'Required' }
-    next.required = Object.keys(next.properties)
-    for (const key of Object.keys(next.properties)) {
-      const property = next.properties[key]
+  public Required<T extends Normalizable>(schema: T, options: SchemaOptions = {}): TRequired<Normalize<T>> {
+    const normal = this.Normalize(schema)
+    const object = { ...this.Clone(normal), ...options, [Hint]: 'Required' }
+    object.required = Object.keys(object.properties)
+    for (const key of Object.keys(object.properties)) {
+      const property = object.properties[key]
       const modifier = property[Modifier]
       switch (modifier) {
         case 'ReadonlyOptional':
@@ -948,7 +944,7 @@ export class TypeBuilder {
           break
       }
     }
-    return this.Create(next)
+    return this.Create(object)
   }
 
   /** `Extended` Creates a type from this functions return type */
@@ -1009,6 +1005,39 @@ export class TypeBuilder {
   /** `Extended` Creates a void type */
   public Void(options: SchemaOptions = {}): TVoid {
     return this.Create({ ...options, [Kind]: 'Void', type: 'null', typeOf: 'Void' })
+  }
+
+  /** `Standard` Normalizes the given schema into nominal form. */
+  public Normalize<T extends Normalizable>(schema: T): Normalize<T> {
+    const isOptionalProperty = (schema: TSchema) => (schema[Modifier] && schema[Modifier] === 'Optional') || schema[Modifier] === 'ReadonlyOptional'
+    const isIntersect = (schema: Normalizable): schema is TIntersect<TObject[]> => Kind in schema && schema[Kind] === 'Intersect' && schema.allOf.every((object) => isObject(object))
+    const isObject = (schema: Normalizable): schema is TObject => Kind in schema && schema[Kind] === 'Object'
+    if (isObject(schema)) return this.Clone(schema)
+    if (!isIntersect(schema)) throw Error('Error: Unable to normalize to object for non-object type')
+    const [required, optional] = [new Set<string>(), new Set<string>()]
+    for (const object of schema.allOf) {
+      for (const [key, schema] of Object.entries(object.properties)) {
+        if (isOptionalProperty(schema)) optional.add(key)
+      }
+    }
+    for (const object of schema.allOf) {
+      for (const key of Object.keys(object.properties)) {
+        if (!optional.has(key)) required.add(key)
+      }
+    }
+    const properties = {} as Record<string, any>
+    for (const object of schema.allOf) {
+      for (const [key, schema] of Object.entries(object.properties)) {
+        properties[key] = properties[key] === undefined ? schema : { [Kind]: 'Union', anyOf: [properties[key], { ...schema }] }
+      }
+    }
+    const unevaluatedProperties = 'unevaluatedProperties' in schema ? schema.unevaluatedProperties : true
+    const additionalProperties: any = unevaluatedProperties ? {} : { additionalProperties: false }
+    if (required.size > 0) {
+      return this.Create({ ...additionalProperties, [Kind]: 'Object', type: 'object', properties, required: [...required] })
+    } else {
+      return this.Create({ ...additionalProperties, [Kind]: 'Object', type: 'object', properties })
+    }
   }
 
   /** Use this function to return TSchema with static and params omitted */

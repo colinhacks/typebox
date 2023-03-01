@@ -1,102 +1,54 @@
 import { Type, Kind, Static, Modifier, TSchema, SchemaOptions, IntersectReduce, IntersectEvaluate, TObject, TProperties, TNumber, UnionToIntersect } from '@sinclair/typebox'
+import * as Types from '@sinclair/typebox'
 
-function Create(value: any): any {
-  return value
-}
-function Clone(value: any): any {
-  return value
-}
+// We normalize combinations of intersection and union types based on the distributive property of the '&'
+// operator. Specifically, because X & (A | B) is equivalent to X & A | X & B, we can transform intersection
+// types with union type constituents into equivalent union types with intersection type constituents and
+// effectively ensure that union types are always at the top level in type representations.
+//
+// We do not perform structural deduplication on intersection types. Intersection types are created only by the &
+// type operator and we can't reduce those because we want to support recursive intersection types. For example,
+// a type alias of the form "type List<T> = T & { next: List<T> }" cannot be reduced during its declaration.
+// Also, unlike union types, the order of the constituent types is preserved in order that overload resolution
+// for intersections of types with signatures can be deterministic.
 
+const S = Type.Object({ a: Type.Number() })
 
-export interface AndOptions extends SchemaOptions {
-  unevaluatedProperties?: boolean
-}
+const A = Type.Object({ a: Type.Optional(Type.Number()) })
+const B = Type.Object({ b: Type.Optional(Type.Number()) })
+const C = Type.Object({ c: Type.Optional(Type.Number()) })
+const I = Type.Intersect([A, B, C])
+const K = Type.KeyOf(S)
+const M = Type.Omit(I, K)
 
-export interface TAnd<T extends TSchema[] = []> extends TSchema, AndOptions {
-  [Kind]: 'And'
-  static: IntersectReduce<unknown, IntersectEvaluate<T, []>>
-  allOf: T
-}
+type K = Static<typeof M>
 
-function And<T extends TSchema[] = []>(allOf: T, options: AndOptions = {}): TAnd<T> {
-  return { ...options, [Kind]: 'And', allOf } as any as TAnd<T>
-}
+// // -------------------------------------------------------------------
+// // Omit
+// // -------------------------------------------------------------------
+// export type TOmit<T extends Types.TObject, K extends keyof any> = TPick<T, Exclude<keyof T['properties'], K>>
 
-type ObjectLike = TAnd<TObject[]> | TObject
+// // -------------------------------------------------------------------
+// // Pick
+// // -------------------------------------------------------------------
+// export type TPick<T extends Types.TObject, K extends keyof any> = Types.TObject<{
+//    [IK in K]: IK extends keyof T['properties'] ? T['properties'][IK] : never
+// }>
 
-// -------------------------------------------------------------------------------------
-// Normalize
-// -------------------------------------------------------------------------------------
+// export function Pick<T extends Types.Normalizable, K extends Types.NormalizeKeyOf<T>[]>(schema: T, keys: [...K]): TPick<Types.Normalize<T>, K[number]> {
+//     throw 1
+// }
 
-export type NormalizeObjectIntersect<T extends TAnd<TObject[]>> = UnionToIntersect<({
-  [K in keyof T['allOf']]: T['allOf'][K] extends infer P ? P extends TObject ? P['properties'] : never : never
-})[number]> extends infer O ? O extends TProperties ? TObject<O> : never: never
+// export function Omit<T extends Types.Normalizable, K extends Types.NormalizeKeyOf<T>[]>(schema: T, keys: [...K]): TOmit<Types.Normalize<T>, K[number]> {
+//     throw 1
+// }
 
-export type NormalizeObject<T extends TObject> = T
+// const X = Omit(I, ['c', 'b'])
 
-export type TNormalize<T> = 
-  T extends TAnd<TObject[]> ? NormalizeObjectIntersect<T> : 
-  T extends TObject ? NormalizeObject<T> : 
-  never
+// // type T = Static<typeof X>
 
-function Normalize<T extends ObjectLike>(schema: T): TNormalize<T> {
-  const isOptionalProperty = (schema: TSchema) => (schema[Modifier] && schema[Modifier] === 'Optional') || schema[Modifier] === 'ReadonlyOptional'
-  const isIntersect = (schema: ObjectLike): schema is TAnd<TObject[]> => (Kind in schema) && (schema[Kind] === 'And') && schema.allOf.every(object => isObject(object))
-  const isObject = (schema: ObjectLike): schema is TObject => (Kind in schema) && schema[Kind] === 'Object'
-  if(isObject(schema)) return Clone(schema)
-  if(!isIntersect(schema)) throw Error('Error: Unable to normalize to object for non-object type')
-  const [required, optional] = [new Set<string>(), new Set<string>()]
-  for (const object of schema.allOf) {
-    for (const [key, schema] of Object.entries(object.properties)) {
-      if (isOptionalProperty(schema)) optional.add(key)
-    }
-  }
-  for (const object of schema.allOf) {
-    for (const key of Object.keys(object.properties)) {
-      if (!optional.has(key)) required.add(key)
-    }
-  }
-  const properties = {} as Record<string, any>
-  for (const object of schema.allOf) {
-    for (const [key, schema] of Object.entries(object.properties)) {
-      properties[key] = properties[key] === undefined ? schema : { [Kind]: 'Union', anyOf: [properties[key], { ...schema }] }
-    }
-  }
-  const unevaluatedProperties = ('unevaluatedProperties' in schema) ? schema.unevaluatedProperties : true
-  const additionalProperties = unevaluatedProperties  ? { } : { additionalProperties: false }
-  if (required.size > 0) {
-    return Create({ ...additionalProperties, [Kind]: 'Object', type: 'object', properties, required: [...required] })
-  } else {
-    return Create({ ...additionalProperties, [Kind]: 'Object', type: 'object', properties })
-  }
-}
-
-
-type A = TObject<{ x: TNumber }>
-type B = TObject<{ y: TNumber }>
-type C = TAnd<[A, B]>
-
-
-type O = NormalizeObjectIntersect<C>
-
-type X = O extends TProperties ? true : false
-
-const A = Type.Object({ 
-  a: Type.String()
-})
-const B = Type.Object({ 
-  a: Type.String()
-})
-
-const C = And([A, B], { })
-
-const D = Normalize(C)
-
-console.log(JSON.stringify(D, null, 2))
-
-type T = { x: number } & { y: number }
-
-type F = { [K in keyof T]: T[K] }
-
-// type F = { x: number, y: number }
-
+// type T = Types.TUnion<[
+//     Types.TLiteral<1>,
+//     Types.TLiteral<2>,
+//     Types.TLiteral<3>
+// ]>

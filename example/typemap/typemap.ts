@@ -165,12 +165,12 @@ export class FluentType<T extends Types.TSchema = Types.TSchema> {
 }
 export class FluentObject<T extends Types.TObject = Types.TObject> extends FluentType<T> {
   public Intersect<U extends Types.TObject>(type: IntoFluent<U>) {
-    return new FluentIntersect(Types.Type.Intersect([this.Schema, type.Schema]))
+    // return new FluentIntersect(Types.Type.Intersect([this.Schema, type.Schema]))
   }
   public Extend<U extends Types.TProperties>(properties: IntoFluentProperties<U>) {
     const props = Object.keys(properties).reduce((acc, key) => ({ ...acc, [key]: properties[key].Schema }), {} as Types.TProperties) as U
     const object = Types.Type.Object(props)
-    return new FluentIntersect(Types.Type.Intersect([this.Schema, object]))
+    //return new FluentIntersect(Types.Type.Intersect([this.Schema, object]))
   }
   public Partial() {
     return new FluentObject(Types.Type.Partial(this.Schema))
@@ -327,7 +327,7 @@ export class FluentUint8Array<T extends Types.TUint8Array> extends FluentType<T>
 export class FluentRecord<T extends Types.TSchema> extends FluentType<Types.TRecord<Types.TString, T>> {}
 export class FluentSelf extends FluentType<Types.TSelf> {}
 export class FluentRecursive<T extends Types.TSchema> extends FluentType<T> {}
-export class FluentIntersect<T extends Types.TIntersect> extends FluentObject<T> {}
+export class FluentIntersect<T extends Types.TIntersect> extends FluentType<T> {}
 export class FluentAny<T extends Types.TAny> extends FluentType<T> {}
 export class FluentLiteral<T extends Types.TLiteral<Types.TLiteralValue>> extends FluentType<T> {}
 export class FluentUnknown<T extends Types.TUnknown> extends FluentType<T> {}
@@ -421,8 +421,9 @@ export class FluentTypeBuilder {
   public Integer(options: Types.NumericOptions = {}) {
     return new FluentInteger(Types.Type.Integer())
   }
-  public Intersect<T extends Types.TObject[]>(objects: [...IntoFluentTuple<T>]) {
-    return new FluentObject(Types.Type.Intersect(objects.map((type) => type.Schema))) as FluentObject<Types.TIntersect<T>>
+  public Intersect<T extends Types.TSchema[]>(objects: [...IntoFluentTuple<T>]) {
+    const T = Types.Type.Intersect(objects.map((type) => type.Schema))
+    //return new FluentIntersect(T)
   }
   public Null(options: Types.SchemaOptions = {}) {
     return new FluentNull(Types.Type.Null())
