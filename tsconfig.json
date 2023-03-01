@@ -7,6 +7,9 @@
     "declaration": true,
     "baseUrl": ".",
     "paths": {
+      "typemap": [
+        "example/typemap/typemap.ts"
+      ],
       "@sinclair/typebox/codegen": [
         "codegen/index.ts"
       ],

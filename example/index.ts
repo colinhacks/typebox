@@ -1,21 +1,13 @@
-import Type, { FluentType, Static, Value } from './typemap/typemap'
+import Type, { Static } from 'typemap'
 
-console.log(Value.Diff(1, 2))
+const T = Type.String().Default('hello')
 
-function Vector<T extends FluentType>(type: T) {
-  return Type.Object({
-    x: type,
-    y: type,
-    z: type,
-  })
-}
+const M = Type.Object({
+  x: Type.Number(),
+}).Default({
+  x: 1,
+})
 
-const A = Vector(Type.String().Email()).KeyOf()
+type X = Static<typeof M>
 
-const P = Type.Record(A, Vector(Vector(Vector(Type.Number()))))
-
-const C = Type.Extends(Type.Any(), Type.String()).Then(P).Else(Type.Literal(true))
-
-console.log(C.Schema)
-
-function test(value: Static<typeof P>) {}
+const S = Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(3)])

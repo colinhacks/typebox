@@ -19,17 +19,19 @@ $ npm install typemap
 ## Example
 
 ```typescript
-import Type, { Static } from 'typemap'
+import Type from 'typemap'
 
-const T = Type.String().Equals('hello world').Compile()
+const T = Type.String().Equals('hello world')
 
-type T = Static<typeof T>         // type T = string
+console.log(T.Code)               // function check(value) {
+                                  //    return typeof value === 'string' && value === 'hello world'"
+                                  // }
 
-console.log(T.Code)               // Prints code for this type
+console.log(T.Schema)             // { 
+                                  //   type: 'string', pattern: '^hello world$' 
+                                  // }
 
-console.log(T.Schema)             // Prints JSON schema for this type
-
-const R = T.Parse('hello world')  // const R = true
+const R = T.Parse('hello world')  // type R = string
 ```
 
 ## Overview
