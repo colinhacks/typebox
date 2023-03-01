@@ -16,28 +16,24 @@ import { TypeSystem } from '@sinclair/typebox/system'
 import { TypeCompiler } from '@sinclair/typebox/compiler'
 import * as Types from '@sinclair/typebox'
 
-const X = Type.Object({ x: Type.Number() })
-const Y = Type.Object({ y: Type.Number() })
-const Z = Type.Object({ z: Type.Number() })
+const A = Type.Object({
+  x: Type.Number(),
+  a: Type.Number(),
+})
+const B = Type.Object({
+  x: Type.Number(),
+  b: Type.Number(),
+})
+const C = Type.Object({
+  x: Type.Number(),
+  b: Type.String(),
+})
 
-const V = Type.Intersect([X, Y, Z])
+const T = Type.Intersect([Type.Union([A, B, C])])
 
-const T = Type.Union([V])
+const N = Type.Normalize(T)
+console.log(N)
 
-const C = TypeCompiler.Compile(T)
+// console.log(JSON.stringify(X, null, 2))
 
-console.log(C.Check('0000000000'))
-
-// const AA = Type.Object({
-//     key: Type.Literal("literal-string"),
-//     value: Type.String(),
-// });
-
-// const BB = Type.Object({
-//     key: Type.Literal("literal-number"),
-//     value: Type.Number(),
-// });
-
-// const mySchema = Type.Union([AA, BB]);
-
-// const justKeys = Type.Pick(mySchema, ["key"]);
+// console.log(Value.Check(T, { x: 1 }))

@@ -122,7 +122,15 @@ export namespace ValueCreate {
       return 0
     }
   }
-
+  function Intersect(schema: Types.TIntersect, references: Types.TSchema[]): any {
+    if ('default' in schema) {
+      return schema.default
+    } else if (schema.minimum !== undefined) {
+      return schema.minimum
+    } else {
+      return 0
+    }
+  }
   function Literal(schema: Types.TLiteral, references: Types.TSchema[]): any {
     if ('default' in schema) {
       return schema.default
@@ -271,6 +279,7 @@ export namespace ValueCreate {
       return ValueCreate.Create(schema.anyOf[0], references)
     }
   }
+
   function Uint8Array(schema: Types.TUint8Array, references: Types.TSchema[]): any {
     if ('default' in schema) {
       return schema.default
@@ -324,6 +333,8 @@ export namespace ValueCreate {
         return Function(anySchema, anyReferences)
       case 'Integer':
         return Integer(anySchema, anyReferences)
+      case 'Intersect':
+        return Intersect(anySchema, anyReferences)
       case 'Literal':
         return Literal(anySchema, anyReferences)
       case 'Never':

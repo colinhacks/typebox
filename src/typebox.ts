@@ -298,9 +298,8 @@ export interface TNever extends TSchema {
 // -------------------------------------------------------------------------------------
 // Normalize
 // -------------------------------------------------------------------------------------
-export type Normalizable = TIntersect<TObject[]> | TObject
-
 export type NormalizableKeys<T extends Normalizable> = keyof Normalize<T>['properties']
+export type Normalizable = TIntersect<TObject[]> | TUnion<TObject[]> | TObject
 
 // prettier-ignore
 export type NormalizeObjectIntersect<T extends TIntersect<TObject[]>> = UnionToIntersect<{
@@ -310,7 +309,23 @@ export type NormalizeObjectIntersect<T extends TIntersect<TObject[]>> = UnionToI
   [K in keyof Properties]: Properties[K] 
 }> : never : never
 
-export type Normalize<T> = T extends TIntersect<TObject[]> ? NormalizeObjectIntersect<T> : T extends TObject ? T : never
+// prettier-ignore
+export type NormalizeObjectUnionKeys<T extends TUnion<TObject[]>> = (Static<T> extends infer S ? (
+  keyof { [K in keyof S]: S[K] }
+) : never)
+// prettier-ignore
+export type NormalizeObjectUnion<T extends TUnion<TObject[]>> = UnionToIntersect<{
+  [K in keyof T['anyOf']]: T['anyOf'][K] extends infer Object ? (Object extends TObject ? Object['properties'] : never) : never
+}[number]> extends infer Properties ? Properties extends TProperties ? TObject<{ 
+  [K in NormalizeObjectUnionKeys<T>]: Properties[K] 
+}> : never : never
+
+// prettier-ignore
+export type Normalize<T> = 
+  T extends TIntersect<TObject[]> ? NormalizeObjectIntersect<T> : 
+  T extends TUnion<TObject[]>     ? NormalizeObjectUnion<T> : 
+  T extends TObject               ? T 
+  : never
 
 // --------------------------------------------------------------------------
 // Not
@@ -749,34 +764,17 @@ export class TypeBuilder {
 
   /** `Standard` Returns the normalized representation of an object or object intersection. */
   public Normalize<T extends Normalizable>(schema: T): Normalize<T> {
-    const isOptionalProperty = (schema: TSchema) => (schema[Modifier] && schema[Modifier] === 'Optional') || schema[Modifier] === 'ReadonlyOptional'
     const isIntersect = (schema: Normalizable): schema is TIntersect<TObject[]> => Kind in schema && schema[Kind] === 'Intersect' && schema.allOf.every((object) => isObject(object))
+    const isUnion = (schema: Normalizable): schema is TUnion<TObject[]> => Kind in schema && schema[Kind] === 'Union' && schema.anyOf.every((object) => isObject(object))
     const isObject = (schema: Normalizable): schema is TObject => Kind in schema && schema[Kind] === 'Object'
-    if (isObject(schema)) return this.Clone(schema)
-    if (!isIntersect(schema)) throw Error('Error: Unable to normalize to object for non-object type')
-    const [required, optional] = [new Set<string>(), new Set<string>()]
-    for (const object of schema.allOf) {
-      for (const [key, schema] of Object.entries(object.properties)) {
-        if (isOptionalProperty(schema)) optional.add(key)
-      }
-    }
-    for (const object of schema.allOf) {
-      for (const key of Object.keys(object.properties)) {
-        if (!optional.has(key)) required.add(key)
-      }
-    }
-    const properties = {} as Record<string, any>
-    for (const object of schema.allOf) {
-      for (const [key, schema] of Object.entries(object.properties)) {
-        properties[key] = properties[key] === undefined ? schema : { [Kind]: 'Union', anyOf: [properties[key], { ...schema }] }
-      }
-    }
-    const unevaluatedProperties = 'unevaluatedProperties' in schema ? schema.unevaluatedProperties : true
-    const additionalProperties: any = unevaluatedProperties ? {} : { additionalProperties: false }
-    if (required.size > 0) {
-      return this.Create({ ...additionalProperties, [Kind]: 'Object', type: 'object', properties, required: [...required] })
+    if (isIntersect(schema)) {
+      return this.NormalizeIntersect(schema)
+    } else if (isUnion(schema)) {
+      return this.NormalizeUnion(schema)
+    } else if (isObject(schema)) {
+      return this.Clone(schema)
     } else {
-      return this.Create({ ...additionalProperties, [Kind]: 'Object', type: 'object', properties })
+      throw Error('Error: Schema normalization error. Expect TUnion<TIntersect[]>, TUnion<TObject[]> or TObject')
     }
   }
 
@@ -1070,6 +1068,79 @@ export class TypeBuilder {
       return value.map((item: any) => this.Clone(item))
     } else {
       return value
+    }
+  }
+  // ---------------------------------------------------------------------------
+  // Normalization Routines
+  // ---------------------------------------------------------------------------
+  private NormalizeIntersect<T extends TIntersect<TObject[]>>(schema: T): Normalize<T> {
+    const isOptionalProperty = (schema: TSchema) => (schema[Modifier] && schema[Modifier] === 'Optional') || schema[Modifier] === 'ReadonlyOptional'
+    const [required, optional] = [new Set<string>(), new Set<string>()]
+    for (const object of schema.allOf) {
+      for (const [key, schema] of Object.entries(object.properties)) {
+        if (isOptionalProperty(schema)) optional.add(key)
+      }
+    }
+    for (const object of schema.allOf) {
+      for (const key of Object.keys(object.properties)) {
+        if (!optional.has(key)) required.add(key)
+      }
+    }
+    const properties = {} as Record<string, any>
+    for (const object of schema.allOf) {
+      for (const [key, schema] of Object.entries(object.properties)) {
+        properties[key] = properties[key] === undefined ? schema : { [Kind]: 'Union', anyOf: [properties[key], { ...schema }] }
+      }
+    }
+    const unevaluatedProperties = 'unevaluatedProperties' in schema ? schema.unevaluatedProperties : true
+    const additionalProperties: any = unevaluatedProperties ? {} : { additionalProperties: false }
+    if (required.size > 0) {
+      return this.Create({ ...additionalProperties, [Kind]: 'Object', type: 'object', properties, required: [...required] })
+    } else {
+      return this.Create({ ...additionalProperties, [Kind]: 'Object', type: 'object', properties })
+    }
+  }
+
+  private NormalizeUnion<T extends TUnion<TObject[]>>(schema: T): Normalize<T> {
+    const include_keys = new Set<string>()
+    const exclude_keys = new Set<string>()
+    const optional_keys = new Set<string>()
+    const required_keys = new Set<string>()
+    for (const left of schema.anyOf) {
+      for (const key of globalThis.Object.keys(left.properties)) {
+        if (schema.anyOf.every((right) => key in right.properties)) {
+          include_keys.add(key)
+        }
+      }
+    }
+    for (const left of schema.anyOf) {
+      for (const key of globalThis.Object.keys(left.properties)) {
+        if (!include_keys.has(key)) exclude_keys.add(key)
+      }
+    }
+    for (const key of include_keys) {
+      const optional = schema.anyOf.some((subschema) => {
+        const property = subschema.properties[key]
+        const modifier = property[Modifier] as string | undefined
+        return typeof modifier === 'string' && ['ReadonlyOptional', 'Optional'].includes(modifier)
+      })
+      if (optional) {
+        optional_keys.add(key)
+      } else {
+        required_keys.add(key)
+      }
+    }
+    const include_properties = [...include_keys].reduce((acc, key) => {
+      const anyOf = schema.anyOf.map((schema) => schema.properties[key])
+      const property = { [Kind]: 'Union', anyOf } as any
+      return { ...acc, [key]: property }
+    }, {} as TProperties)
+
+    const properties = { ...include_properties }
+    if (required_keys.size > 0) {
+      return this.Create({ [Kind]: 'Object', type: 'object', properties, required: [...required_keys] } as any)
+    } else {
+      return this.Create({ [Kind]: 'Object', type: 'object', properties } as any)
     }
   }
 }
