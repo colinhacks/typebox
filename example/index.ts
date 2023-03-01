@@ -13,13 +13,14 @@ import * as Types from '@sinclair/typebox'
 // for intersections of types with signatures can be deterministic.
 
 const S = Type.Object({ a: Type.Number() })
-
 const A = Type.Object({ a: Type.Optional(Type.Number()) })
 const B = Type.Object({ b: Type.Optional(Type.Number()) })
 const C = Type.Object({ c: Type.Optional(Type.Number()) })
 const I = Type.Intersect([A, B, C])
 const K = Type.KeyOf(S)
-const M = Type.Omit(I, K)
+const M = Type.Pick(I, K)
+
+const P = Type.Partial(Type.Required(I))
 
 type K = Static<typeof M>
 

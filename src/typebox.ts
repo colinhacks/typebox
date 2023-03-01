@@ -410,7 +410,11 @@ export type TPartial<T extends TObject> =
     T['properties'][K] extends TReadonly<infer U>         ? TReadonlyOptional<U> : 
     T['properties'][K] extends TOptional<infer U>         ? TOptional<U> : 
     TOptional<T['properties'][K]>
-}>
+}> extends TObject<
+    infer Properties
+  >
+    ? TObject<Properties>
+    : never
 
 // --------------------------------------------------------------------------
 // Pick
@@ -418,7 +422,9 @@ export type TPartial<T extends TObject> =
 
 export type TPick<T extends TObject, K extends keyof any> = TObject<{
   [IK in K]: IK extends keyof T['properties'] ? T['properties'][IK] : never
-}>
+}> extends TObject<infer Properties>
+  ? TObject<Properties>
+  : never
 
 // --------------------------------------------------------------------------
 // Promise
@@ -483,7 +489,11 @@ export type TRequired<T extends TObject> =
     T['properties'][K] extends TReadonly<infer U>         ? TReadonly<U> :
     T['properties'][K] extends TOptional<infer U>         ? U :  
     T['properties'][K]
-}>
+}> extends TObject<
+    infer Properties
+  >
+    ? TObject<Properties>
+    : never
 
 // --------------------------------------------------------------------------
 // String

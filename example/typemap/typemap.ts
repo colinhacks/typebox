@@ -341,7 +341,7 @@ export type FluentProperties = Record<any, FluentType>
 export class FluentPromise<T extends Types.TSchema> extends FluentType<T> {}
 export class FluentUnion<T extends Types.TUnion> extends FluentType<T> {}
 export class FluentTuple<T extends Types.TTuple> extends FluentType<T> {}
-export class FluentPick<T extends Types.TObject, Properties extends Types.ObjectPropertyKeys<T>[]> extends FluentType<Types.TPick<T, Properties>> {}
+export class FluentPick<T extends Types.TObject, Properties extends keyof any> extends FluentType<Types.TPick<T, Properties>> {}
 export class FluentUnsafe<T extends Types.TUnsafe<unknown>> extends FluentType<T> {}
 export class FluentVoid<T extends Types.TVoid> extends FluentType<T> {}
 
