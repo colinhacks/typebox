@@ -92,6 +92,11 @@ const C = And([A, B], { })
 
 const D = Normalize(C)
 
-type T = Static<typeof D>
-
 console.log(JSON.stringify(D, null, 2))
+
+type T = { x: number } & { y: number }
+
+type F = { [K in keyof T]: T[K] }
+
+// type F = { x: number, y: number }
+
