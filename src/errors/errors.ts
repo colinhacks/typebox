@@ -55,6 +55,7 @@ export enum ValueErrorType {
   IntegerExclusiveMaximum,
   IntegerMinimum,
   IntegerMaximum,
+  Intersect,
   Literal,
   Never,
   Not,
@@ -194,6 +195,17 @@ export namespace ValueErrors {
     }
     if (IsNumber(schema.maximum) && !(value <= schema.maximum)) {
       yield { type: ValueErrorType.IntegerMaximum, schema, path, value, message: `Expected integer to be less or equal to ${schema.maximum}` }
+    }
+  }
+
+  function* Intersect(schema: Types.TIntersect, references: Types.TSchema[], path: string, value: any): IterableIterator<ValueError> {
+    for (const subschema of schema.allOf) {
+      const next = Visit(subschema, references, path, value).next()
+      if (!next.done) {
+        yield next.value
+        yield { type: ValueErrorType.Intersect, schema, path, value, message: `Invalid value` }
+        return
+      }
     }
   }
 
@@ -453,6 +465,8 @@ export namespace ValueErrors {
         return yield* Function(anySchema, anyReferences, path, value)
       case 'Integer':
         return yield* Integer(anySchema, anyReferences, path, value)
+      case 'Intersect':
+        return yield* Intersect(anySchema, anyReferences, path, value)
       case 'Literal':
         return yield* Literal(anySchema, anyReferences, path, value)
       case 'Never':

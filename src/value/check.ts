@@ -128,7 +128,9 @@ export namespace ValueCheck {
     }
     return true
   }
-
+  function Intersect(schema: Types.TIntersect, references: Types.TSchema[], value: any): boolean {
+    return schema.allOf.every((schema) => Visit(schema, references, value))
+  }
   function Literal(schema: Types.TLiteral, references: Types.TSchema[], value: any): boolean {
     return value === schema.const
   }
@@ -362,6 +364,8 @@ export namespace ValueCheck {
         return Function(anySchema, anyReferences, value)
       case 'Integer':
         return Integer(anySchema, anyReferences, value)
+      case 'Intersect':
+        return Intersect(anySchema, anyReferences, value)
       case 'Literal':
         return Literal(anySchema, anyReferences, value)
       case 'Never':

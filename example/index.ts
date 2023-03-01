@@ -11,61 +11,33 @@
 
 import { Type, Kind, Static, Modifier, TSchema, SchemaOptions, IntersectReduce, IntersectEvaluate, TObject, TProperties, TNumber, UnionToIntersect } from '@sinclair/typebox'
 import { TypeGuard } from 'src/guard/guard'
+import { Value } from '@sinclair/typebox/value'
+import { TypeSystem } from '@sinclair/typebox/system'
+import { TypeCompiler } from '@sinclair/typebox/compiler'
 import * as Types from '@sinclair/typebox'
 
-const A = Type.Object({ a: Type.Number(), b: Type.Number() })
-const B = Type.Object({ b: Type.Number() })
-const C = Type.Object({ c: Type.Number() })
-const I = Type.Intersect([A, B, C])
+const X = Type.Object({ x: Type.Number() })
+const Y = Type.Object({ y: Type.Number() })
+const Z = Type.Object({ z: Type.Number() })
 
-console.log(TypeGuard.TIntersect(I))
+const V = Type.Intersect([X, Y, Z])
 
-type I = Static<typeof I>
+const T = Type.Union([V])
 
-// const K = Type.Pick(I, [''])
+const C = TypeCompiler.Compile(T)
 
-const T = Type.Union([Type.Normalize(I), Type.String()])
+console.log(C.Check('0000000000'))
 
-const N = Type.Normalize(I)
+// const AA = Type.Object({
+//     key: Type.Literal("literal-string"),
+//     value: Type.String(),
+// });
 
-// const S = Type.Object({ a: Type.Number() })
-// const A = Type.Object({ a: Type.Optional(Type.Number()) })
-// const B = Type.Object({ b: Type.Optional(Type.Number()) })
-// const C = Type.Object({ c: Type.Optional(Type.Number()) })
-// const I = Type.Intersect([A, B, C])
-// const K = Type.KeyOf(S)
-// const M = Type.Pick(I, K)
+// const BB = Type.Object({
+//     key: Type.Literal("literal-number"),
+//     value: Type.Number(),
+// });
 
-// const P = Type.KeyOf(Type.Partial(Type.Required(I)))
+// const mySchema = Type.Union([AA, BB]);
 
-// type K = Static<typeof M>
-
-// // // -------------------------------------------------------------------
-// // // Omit
-// // // -------------------------------------------------------------------
-// // export type TOmit<T extends Types.TObject, K extends keyof any> = TPick<T, Exclude<keyof T['properties'], K>>
-
-// // // -------------------------------------------------------------------
-// // // Pick
-// // // -------------------------------------------------------------------
-// // export type TPick<T extends Types.TObject, K extends keyof any> = Types.TObject<{
-// //    [IK in K]: IK extends keyof T['properties'] ? T['properties'][IK] : never
-// // }>
-
-// // export function Pick<T extends Types.Normalizable, K extends Types.NormalizeKeyOf<T>[]>(schema: T, keys: [...K]): TPick<Types.Normalize<T>, K[number]> {
-// //     throw 1
-// // }
-
-// // export function Omit<T extends Types.Normalizable, K extends Types.NormalizeKeyOf<T>[]>(schema: T, keys: [...K]): TOmit<Types.Normalize<T>, K[number]> {
-// //     throw 1
-// // }
-
-// // const X = Omit(I, ['c', 'b'])
-
-// // // type T = Static<typeof X>
-
-// // type T = Types.TUnion<[
-// //     Types.TLiteral<1>,
-// //     Types.TLiteral<2>,
-// //     Types.TLiteral<3>
-// // ]>
+// const justKeys = Type.Pick(mySchema, ["key"]);

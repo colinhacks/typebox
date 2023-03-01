@@ -148,7 +148,6 @@ export namespace TypeCompiler {
   function* Any(schema: Types.TAny, value: string): IterableIterator<string> {
     yield 'true'
   }
-
   function* Array(schema: Types.TArray, value: string): IterableIterator<string> {
     const expression = CreateExpression(schema.items, 'value')
     yield `Array.isArray(${value}) && ${value}.every(value => ${expression})`
@@ -156,15 +155,12 @@ export namespace TypeCompiler {
     if (IsNumber(schema.maxItems)) yield `${value}.length <= ${schema.maxItems}`
     if (schema.uniqueItems === true) yield `((function() { const set = new Set(); for(const element of ${value}) { const hashed = hash(element); if(set.has(hashed)) { return false } else { set.add(hashed) } } return true })())`
   }
-
   function* Boolean(schema: Types.TBoolean, value: string): IterableIterator<string> {
     yield `typeof ${value} === 'boolean'`
   }
-
   function* Constructor(schema: Types.TConstructor, value: string): IterableIterator<string> {
     yield* Visit(schema.returns, `${value}.prototype`)
   }
-
   function* Date(schema: Types.TDate, value: string): IterableIterator<string> {
     yield `(${value} instanceof Date) && !isNaN(${value}.getTime())`
     if (IsNumber(schema.exclusiveMinimumTimestamp)) yield `${value}.getTime() > ${schema.exclusiveMinimumTimestamp}`
@@ -172,11 +168,9 @@ export namespace TypeCompiler {
     if (IsNumber(schema.minimumTimestamp)) yield `${value}.getTime() >= ${schema.minimumTimestamp}`
     if (IsNumber(schema.maximumTimestamp)) yield `${value}.getTime() <= ${schema.maximumTimestamp}`
   }
-
   function* Function(schema: Types.TFunction, value: string): IterableIterator<string> {
     yield `typeof ${value} === 'function'`
   }
-
   function* Integer(schema: Types.TInteger, value: string): IterableIterator<string> {
     yield `(typeof ${value} === 'number' && Number.isInteger(${value}))`
     if (IsNumber(schema.multipleOf)) yield `(${value} % ${schema.multipleOf}) === 0`
@@ -185,7 +179,10 @@ export namespace TypeCompiler {
     if (IsNumber(schema.minimum)) yield `${value} >= ${schema.minimum}`
     if (IsNumber(schema.maximum)) yield `${value} <= ${schema.maximum}`
   }
-
+  function* Intersect(schema: Types.TIntersect, value: string): IterableIterator<string> {
+    const expressions = schema.allOf.map((schema: Types.TSchema) => CreateExpression(schema, value))
+    yield `${expressions.join(' && ')}`
+  }
   function* Literal(schema: Types.TLiteral, value: string): IterableIterator<string> {
     if (typeof schema.const === 'number' || typeof schema.const === 'boolean') {
       yield `${value} === ${schema.const}`
@@ -193,21 +190,17 @@ export namespace TypeCompiler {
       yield `${value} === '${schema.const}'`
     }
   }
-
   function* Never(schema: Types.TNever, value: string): IterableIterator<string> {
     yield `false`
   }
-
   function* Not(schema: Types.TNot, value: string): IterableIterator<string> {
     const left = CreateExpression(schema.allOf[0].not, value)
     const right = CreateExpression(schema.allOf[1], value)
     yield `!${left} && ${right}`
   }
-
   function* Null(schema: Types.TNull, value: string): IterableIterator<string> {
     yield `${value} === null`
   }
-
   function* Number(schema: Types.TNumber, value: string): IterableIterator<string> {
     if (TypeSystem.AllowNaN) {
       yield `typeof ${value} === 'number'`
@@ -220,7 +213,6 @@ export namespace TypeCompiler {
     if (IsNumber(schema.minimum)) yield `${value} >= ${schema.minimum}`
     if (IsNumber(schema.maximum)) yield `${value} <= ${schema.maximum}`
   }
-
   function* Object(schema: Types.TObject, value: string): IterableIterator<string> {
     if (TypeSystem.AllowArrayObjects) {
       yield `(typeof ${value} === 'object' && ${value} !== null)`
@@ -261,11 +253,9 @@ export namespace TypeCompiler {
       }
     }
   }
-
   function* Promise(schema: Types.TPromise<any>, value: string): IterableIterator<string> {
     yield `(typeof value === 'object' && typeof ${value}.then === 'function')`
   }
-
   function* Record(schema: Types.TRecord<any, any>, value: string): IterableIterator<string> {
     if (TypeSystem.AllowArrayObjects) {
       yield `(typeof ${value} === 'object' && ${value} !== null && !(${value} instanceof Date))`
@@ -278,7 +268,6 @@ export namespace TypeCompiler {
     const expression = CreateExpression(valueSchema, 'value')
     yield `Object.values(${value}).every(value => ${expression})`
   }
-
   function* Ref(schema: Types.TRef<any>, value: string): IterableIterator<string> {
     // Reference: If we have seen this reference before we can just yield and return
     // the function call. If this isn't the case we defer to visit to generate and
@@ -288,12 +277,10 @@ export namespace TypeCompiler {
     const reference = state_reference_map.get(schema.$ref)!
     yield* Visit(reference, value)
   }
-
   function* Self(schema: Types.TSelf, value: string): IterableIterator<string> {
     const func = CreateFunctionName(schema.$ref)
     yield `${func}(${value})`
   }
-
   function* String(schema: Types.TString, value: string): IterableIterator<string> {
     yield `(typeof ${value} === 'string')`
     if (IsNumber(schema.minLength)) yield `${value}.length >= ${schema.minLength}`
@@ -306,7 +293,6 @@ export namespace TypeCompiler {
       yield `format('${schema.format}', ${value})`
     }
   }
-
   function* Tuple(schema: Types.TTuple<any[]>, value: string): IterableIterator<string> {
     yield `(Array.isArray(${value}))`
     if (schema.items === undefined) return yield `${value}.length === 0`
@@ -316,36 +302,29 @@ export namespace TypeCompiler {
       yield `${expression}`
     }
   }
-
   function* Undefined(schema: Types.TUndefined, value: string): IterableIterator<string> {
     yield `${value} === undefined`
   }
-
   function* Union(schema: Types.TUnion<any[]>, value: string): IterableIterator<string> {
     const expressions = schema.anyOf.map((schema: Types.TSchema) => CreateExpression(schema, value))
     yield `${expressions.join(' || ')}`
   }
-
   function* Uint8Array(schema: Types.TUint8Array, value: string): IterableIterator<string> {
     yield `${value} instanceof Uint8Array`
     if (IsNumber(schema.maxByteLength)) yield `(${value}.length <= ${schema.maxByteLength})`
     if (IsNumber(schema.minByteLength)) yield `(${value}.length >= ${schema.minByteLength})`
   }
-
   function* Unknown(schema: Types.TUnknown, value: string): IterableIterator<string> {
     yield 'true'
   }
-
   function* Void(schema: Types.TVoid, value: string): IterableIterator<string> {
     yield `${value} === null`
   }
-
   function* UserDefined(schema: Types.TSchema, value: string): IterableIterator<string> {
     const schema_key = `schema_key_${state_remote_custom_types.size}`
     state_remote_custom_types.set(schema_key, schema)
     yield `custom('${schema[Types.Kind]}', '${schema_key}', ${value})`
   }
-
   function* Visit<T extends Types.TSchema>(schema: T, value: string): IterableIterator<string> {
     // Reference: Referenced schemas can originate from either additional schemas
     // or inline in the schema itself. Ideally the recursive path should align to
@@ -374,6 +353,8 @@ export namespace TypeCompiler {
         return yield* Function(anySchema, value)
       case 'Integer':
         return yield* Integer(anySchema, value)
+      case 'Intersect':
+        return yield* Intersect(anySchema, value)
       case 'Literal':
         return yield* Literal(anySchema, value)
       case 'Never':
@@ -429,7 +410,6 @@ export namespace TypeCompiler {
     state_local_function_names.clear()
     state_remote_custom_types.clear()
   }
-
   function AddReferences(schemas: Types.TSchema[] = []) {
     for (const schema of schemas) {
       if (!schema.$id) throw new Error(`TypeCompiler: Referenced schemas must specify an $id.`)
@@ -437,30 +417,24 @@ export namespace TypeCompiler {
       state_reference_map.set(schema.$id, schema)
     }
   }
-
   function CreateExpression(schema: Types.TSchema, value: string): string {
     return `(${[...Visit(schema, value)].join(' && ')})`
   }
-
   function CreateFunctionName($id: string) {
     return `check_${Identifier.Encode($id)}`
   }
-
   function CreateFunction(name: string, schema: Types.TSchema, value: string): string {
     const expression = [...Visit(schema, value)].map((condition) => `    ${condition}`).join(' &&\n')
     return `function ${name}(value) {\n  return (\n${expression}\n )\n}`
   }
-
   function PushFunction(functionBody: string) {
     state_local_variables.add(functionBody)
   }
-
   function PushLocal(expression: string) {
     const local = `local_${state_local_variables.size}`
     state_local_variables.add(`const ${local} = ${expression}`)
     return local
   }
-
   function GetLocals() {
     return [...state_local_variables.values()]
   }
