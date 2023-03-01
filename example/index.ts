@@ -10,12 +10,15 @@
 // for intersections of types with signatures can be deterministic.
 
 import { Type, Kind, Static, Modifier, TSchema, SchemaOptions, IntersectReduce, IntersectEvaluate, TObject, TProperties, TNumber, UnionToIntersect } from '@sinclair/typebox'
+import { TypeGuard } from 'src/guard/guard'
 import * as Types from '@sinclair/typebox'
 
 const A = Type.Object({ a: Type.Number(), b: Type.Number() })
 const B = Type.Object({ b: Type.Number() })
 const C = Type.Object({ c: Type.Number() })
 const I = Type.Intersect([A, B, C])
+
+console.log(TypeGuard.TIntersect(I))
 
 type I = Static<typeof I>
 

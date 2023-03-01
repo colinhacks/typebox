@@ -201,6 +201,24 @@ export namespace TypeGuard {
     )
   }
 
+  /** Returns true if the given schema is TIntersect */
+  export function TIntersect(schema: unknown): schema is Types.TIntersect {
+    // prettier-ignore
+    if (!(
+      IsObject(schema) && 
+      schema[Types.Kind] === 'Intersect' && 
+      IsArray(schema.allOf) && 
+      IsOptionalBoolean(schema.unevaluatedProperties) &&
+      IsOptionalString(schema.$id))
+    ) {
+      return false
+    }
+    for (const inner of schema.allOf) {
+      if (!TSchema(inner)) return false
+    }
+    return true
+  }
+
   /** Returns true if the given schema is TLiteral */
   export function TLiteral(schema: unknown): schema is Types.TLiteral {
     // prettier-ignore
@@ -462,6 +480,7 @@ export namespace TypeGuard {
       TDate(schema) ||
       TFunction(schema) ||
       TInteger(schema) ||
+      TIntersect(schema) ||
       TLiteral(schema) ||
       TNever(schema) ||
       TNot(schema) ||
