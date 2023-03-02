@@ -9,7 +9,7 @@
 // Also, unlike union types, the order of the constituent types is preserved in order that overload resolution
 // for intersections of types with signatures can be deterministic.
 
-import { Type, Kind, Static, Modifier, TSchema, SchemaOptions, IntersectReduce, IntersectEvaluate, TObject, TProperties, TNumber, UnionToIntersect } from '@sinclair/typebox'
+import { Type, TIntersect, TUnion, Kind, Static, Modifier, TSchema, SchemaOptions, IntersectReduce, IntersectEvaluate, TObject, TProperties, TNumber, UnionToIntersect } from '@sinclair/typebox'
 import { TypeGuard } from 'src/guard/guard'
 import { Value } from '@sinclair/typebox/value'
 import { TypeSystem } from '@sinclair/typebox/system'
@@ -20,6 +20,7 @@ import * as Types from '@sinclair/typebox'
 // difficult, but the normalize function needs to report correctly
 // for nested union/intersections, this involves a recursive type, plus the
 // normalization logic the type (so expensive as all hell)
+
 
 // const A = Type.Intersect([
 //     Type.Object({ b: Type.Number() }),
@@ -33,21 +34,40 @@ import * as Types from '@sinclair/typebox'
 
 // lets change the definition of Union and Intersect to be [L, R] for binary oprand
 
-const A = Type.Intersect([Type.Object({ a: Type.Number() }), Type.Object({ x: Type.Number() })])
+type TA = (
+    {a: number} & {b:number}
+) & {c: number}
 
-const B = Type.Intersect([Type.Object({ b: Type.Number() }), Type.Object({ x: Type.Number() })])
+type TAA = keyof TA
 
-type A = { a: number } | { x: number }
-type B = { b: number } | { x: number }
-type I = A | B
+const A = Type.Intersect([
+    Type.Intersect([
+        Type.Object({ a: Type.Number() }),
+        Type.Object({ b: Type.Number() }),
+    ]),
+    Type.Object({ c: Type.Number() }),
+])
 
-function test(value: I) {}
+type A = [
+    TIntersect<[
+        TObject<{a: TNumber}>,
+        TObject<{b: TNumber}>,
+    ]>,
+    TObject<{c: TNumber}>,
+]
 
-type U = keyof Static<typeof A>
+console.log(A)
 
-const I = Type.Intersect([A, B])
+const N = Type.Normalize(A)
 
-const T = Type.Normalize(A)
-console.log(T)
+const K = Type.KeyOf(N)
 
-type T = Static<typeof T>
+console.log(K)
+
+type O = TObject<{
+    a: TNumber;
+} | {
+    b: TNumber;
+}>
+
+type aa = keyof TA

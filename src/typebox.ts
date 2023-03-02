@@ -38,9 +38,12 @@ export const Modifier = Symbol.for('TypeBox.Modifier')
 // Utils
 // --------------------------------------------------------------------------
 
+export type TupleToIntersect<T extends any[]> = T extends [infer I] ? I : T extends [infer I, ...infer R] ? I & TupleToIntersect<R> : never
+export type TupleToUnion<T extends any[]> = { [K in keyof T]: T[K]}[number]
 export type UnionToIntersect<U> = (U extends unknown ? (arg: U) => 0 : never) extends (arg: infer I) => 0 ? I : never
 export type UnionLast<U> = UnionToIntersect<U extends unknown ? (x: U) => 0 : never> extends (x: infer L) => 0 ? L : never
 export type UnionToTuple<U, L = UnionLast<U>> = [U] extends [never] ? [] : [...UnionToTuple<Exclude<U, L>>, L]
+
 
 // --------------------------------------------------------------------------
 // Modifiers
@@ -299,33 +302,48 @@ export interface TNever extends TSchema {
 // Normalize
 // -------------------------------------------------------------------------------------
 
+
+
 export type NormalizableKeys<T extends Normalizable> = keyof Normalize<T>['properties']
 
 export type Normalizable = TIntersect<any[]> | TUnion<any[]> | TObject
 
-// prettier-ignore
-export type NormalizeIntersect<T extends TIntersect<TObject[]>> = UnionToIntersect<{
-  [K in keyof T['allOf']]: T['allOf'][K] extends infer Object ? (Object extends TObject ? Object['properties'] : never) : never
-}[number]> extends infer Properties ? Properties extends TProperties ? TObject<{
-  [K in keyof Properties]: Properties[K]
-}> : never : never
+
+
 
 // prettier-ignore
-export type NormalizeUnion<T extends TUnion<TObject[]>, S = Static<T>> = S extends never ? {} : UnionToIntersect<{
-  [K in keyof T['anyOf']]: T['anyOf'][K] extends infer Object ? (Object extends TObject ? Object['properties'] : never) : never
-}[number]> extends infer Properties ? Properties extends TProperties ? TObject<{
-  [K in keyof S]: Properties[K]
-}> : never : never
+// export type NormalizeIntersect<T extends TIntersect<TObject[]>> = UnionIntersect<{
+//   [K in keyof T['allOf']]: T['allOf'][K] extends infer Object ? (Object extends TObject ? Object['properties'] : never) : never
+// }[number]> extends infer Properties ? Properties extends TProperties ? TObject<{
+//   [K in keyof Properties]: Properties[K]
+// }> : never : never
 
 // prettier-ignore
-export type NormalizeTuple<T> = 
-  ({ [K in keyof T]: Normalize<T[K]> } extends infer O ? O extends TObject[] ? O : never : never) extends infer F ? 
-  F extends TObject[] ? [NormalizeIntersect<TIntersect<F>>] : never : never
+// export type NormalizeUnion<T extends TUnion<TObject[]>, S = Static<T>> = keyof S extends never ? 1 : UnionIntersect<{
+//   [K in keyof T['anyOf']]: T['anyOf'][K] extends infer Object ? (Object extends TObject ? Object['properties'] : never) : never
+// }[number]> extends infer Properties ? Properties extends TProperties ? TObject<{
+//   [K in keyof S]: Properties[K]
+// }> : never : never
+
+export type ObjectsToPropertiesTuple<T extends TObject[]> = { [K in keyof T]: T[K]['properties'] }
+export type ObjectsToIntersectObject<T extends TObject[]> = TupleToIntersect<ObjectsToPropertiesTuple<T>> extends infer Properties ? Properties extends TProperties ? TObject<Properties> : never : never
+export type ObjectsToUnionObject<T extends TObject[]> = TObject<TupleToUnion<ObjectsToPropertiesTuple<T>>>
+
+// prettier-ignore
+
+export type NormalizeTuple<T> = { [K in keyof T]: Normalize<T[K]> }
+
+
+
+export type AssertProperties<T> = T extends TProperties ? T : never
+
+export type UwrapProperties<T> = T extends TObject ? T['properties'] : 2
+export type UnwrapMultipleProperties<T> = T extends TObject[] ? { [K in keyof T]: UwrapProperties<T[K]> }[number] : never
 
 // prettier-ignore
 export type Normalize<N> =
-  N extends TIntersect<infer T> ? NormalizeIntersect<TIntersect<NormalizeTuple<T>>>  :
-  N extends TUnion    <infer T> ? NormalizeUnion<TUnion<NormalizeTuple<T>>> :
+  N extends TIntersect<infer T> ? TObject<AssertProperties<TupleToIntersect<ObjectsToPropertiesTuple<NormalizeTuple<T>>>>> :
+  N extends TUnion    <infer T> ? UnwrapMultipleProperties<T> :
   N extends TObject             ? N : 
   never
 
