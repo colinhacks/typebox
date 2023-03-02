@@ -16,24 +16,38 @@ import { TypeSystem } from '@sinclair/typebox/system'
 import { TypeCompiler } from '@sinclair/typebox/compiler'
 import * as Types from '@sinclair/typebox'
 
-const A = Type.Object({
-  x: Type.Number(),
-  a: Type.Number(),
-})
-const B = Type.Object({
-  x: Type.Number(),
-  b: Type.Number(),
-})
-const C = Type.Object({
-  x: Type.Number(),
-  b: Type.String(),
-})
+// todo: need to solve the union / intersect case. This is somewhat
+// difficult, but the normalize function needs to report correctly
+// for nested union/intersections, this involves a recursive type, plus the
+// normalization logic the type (so expensive as all hell)
 
-const T = Type.Intersect([Type.Union([A, B, C])])
+// const A = Type.Intersect([
+//     Type.Object({ b: Type.Number() }),
+//     Type.Object({ b: Type.Number() })
+// ])
 
-const N = Type.Normalize(T)
-console.log(N)
+// const B = Type.Intersect([
+//     Type.Object({ c: Type.Number() }),
+//     Type.Object({ c: Type.Number() })
+// ])
 
-// console.log(JSON.stringify(X, null, 2))
+// lets change the definition of Union and Intersect to be [L, R] for binary oprand
 
-// console.log(Value.Check(T, { x: 1 }))
+const A = Type.Intersect([Type.Object({ a: Type.Number() }), Type.Object({ x: Type.Number() })])
+
+const B = Type.Intersect([Type.Object({ b: Type.Number() }), Type.Object({ x: Type.Number() })])
+
+type A = { a: number } | { x: number }
+type B = { b: number } | { x: number }
+type I = A | B
+
+function test(value: I) {}
+
+type U = keyof Static<typeof A>
+
+const I = Type.Intersect([A, B])
+
+const T = Type.Normalize(A)
+console.log(T)
+
+type T = Static<typeof T>
