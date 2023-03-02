@@ -45,7 +45,10 @@ const A = Type.Intersect([
         Type.Object({ a: Type.Number() }),
         Type.Object({ b: Type.Number() }),
     ]),
-    Type.Object({ c: Type.Number() }),
+    Type.Union([
+        Type.Object({ c: Type.Number() }),
+        Type.Object({ d: Type.Number() }),
+    ])  
 ])
 
 type A = [

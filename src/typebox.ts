@@ -302,50 +302,27 @@ export interface TNever extends TSchema {
 // Normalize
 // -------------------------------------------------------------------------------------
 
-
-
-export type NormalizableKeys<T extends Normalizable> = keyof Normalize<T>['properties']
-
-export type Normalizable = TIntersect<any[]> | TUnion<any[]> | TObject
-
-
-
-
-// prettier-ignore
-// export type NormalizeIntersect<T extends TIntersect<TObject[]>> = UnionIntersect<{
-//   [K in keyof T['allOf']]: T['allOf'][K] extends infer Object ? (Object extends TObject ? Object['properties'] : never) : never
-// }[number]> extends infer Properties ? Properties extends TProperties ? TObject<{
-//   [K in keyof Properties]: Properties[K]
-// }> : never : never
-
-// prettier-ignore
-// export type NormalizeUnion<T extends TUnion<TObject[]>, S = Static<T>> = keyof S extends never ? 1 : UnionIntersect<{
-//   [K in keyof T['anyOf']]: T['anyOf'][K] extends infer Object ? (Object extends TObject ? Object['properties'] : never) : never
-// }[number]> extends infer Properties ? Properties extends TProperties ? TObject<{
-//   [K in keyof S]: Properties[K]
-// }> : never : never
-
+export type AssertProperties<T> = T extends TProperties ? T : never
 export type ObjectsToPropertiesTuple<T extends TObject[]> = { [K in keyof T]: T[K]['properties'] }
-export type ObjectsToIntersectObject<T extends TObject[]> = TupleToIntersect<ObjectsToPropertiesTuple<T>> extends infer Properties ? Properties extends TProperties ? TObject<Properties> : never : never
-export type ObjectsToUnionObject<T extends TObject[]> = TObject<TupleToUnion<ObjectsToPropertiesTuple<T>>>
-
-// prettier-ignore
+export type ObjectsToPropertiesUnion<T> = T extends TObject[] ? ObjectsToPropertiesTuple<T>[number] : never
+export type NormalizeIntersect<T extends unknown[]> = NormalizeObject<TupleToIntersect<ObjectsToPropertiesTuple<NormalizeTuple<T>>>>
 
 export type NormalizeTuple<T> = { [K in keyof T]: Normalize<T[K]> }
+export type NormalizeObject<T> = T extends TProperties ? TObject<T> : never
 
+export type NormalizeUnion<T extends unknown[]> = TObject<ObjectsToPropertiesUnion<T>> //NormalizeObject<ObjectsToPropertiesUnion<T>>
 
-
-export type AssertProperties<T> = T extends TProperties ? T : never
-
-export type UwrapProperties<T> = T extends TObject ? T['properties'] : 2
-export type UnwrapMultipleProperties<T> = T extends TObject[] ? { [K in keyof T]: UwrapProperties<T[K]> }[number] : never
+// normalization constraints
+export type NormalizableKeys<T extends Normalizable> = keyof Normalize<T>['properties']
+export type Normalizable = TIntersect<any[]> | TUnion<any[]> | TObject
 
 // prettier-ignore
-export type Normalize<N> =
-  N extends TIntersect<infer T> ? TObject<AssertProperties<TupleToIntersect<ObjectsToPropertiesTuple<NormalizeTuple<T>>>>> :
-  N extends TUnion    <infer T> ? UnwrapMultipleProperties<T> :
+export type Normalize<N> = (
+  N extends TIntersect<infer T> ? NormalizeIntersect<T> :
+  N extends TUnion    <infer T> ? NormalizeUnion<T> :
   N extends TObject             ? N : 
   never
+)
 
 // --------------------------------------------------------------------------
 // Not
