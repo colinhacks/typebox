@@ -80,21 +80,35 @@ const A = Type.Intersect([
         Type.Object({ c: Type.Literal(3) }),
         Type.Object({ d: Type.Literal(4) }),
     ]),
+    Type.Object({ d: Type.String() }),
 ])
 
-// const K = Type.KeyOf(A)
+type T = Static<typeof A>
 
-const N = Type.Normalize(Type.Intersect([
-    Type.Number(),
-    Type.Number()
-]))
+type Ks = keyof T
 
-
-
-type T = Static<typeof N>
-console.log(JSON.stringify(N, null, 2))
-
-const K = Type.KeyOf(N)
+const K = Type.KeyOf(A)
 
 console.log(K)
+
+const N = Type.Normalize(A)
+console.log(JSON.stringify(N, null, 2))
+// console.log(N)
+
+// const L = Type.Intersect([
+//     Type.Number(),
+//     Type.String()
+// ])
+
+// console.log(L)
+
+// type AAA = Static<typeof N>
+
+
+// type T = Static<typeof N>
+// console.log(JSON.stringify(N, null, 2))
+
+// const K = Type.KeyOf(N)
+
+// console.log(K)
 
