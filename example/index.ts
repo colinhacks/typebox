@@ -34,43 +34,67 @@ import * as Types from '@sinclair/typebox'
 
 // lets change the definition of Union and Intersect to be [L, R] for binary oprand
 
-type TA = (
-    {a: number} & {b:number}
-) & {c: number}
+// type TA = (
+//     {a: number} & {b:number}
+// ) & {c: number} | {d: number}
 
-type TAA = keyof TA
+// type TAA = keyof TA
+
+// const A = Type.Intersect([
+//     Type.Intersect([
+//         Type.Object({ a: Type.Number() }),
+//         Type.Object({ b: Type.Number() }),
+//     ]),
+//     Type.Intersect([
+//         Type.Object({ c: Type.Number() }),
+//         Type.Object({ d: Type.Number() }),
+//     ])  
+// ])
+
+// // type A = [
+// //     TIntersect<[
+// //         TObject<{a: TNumber}>,
+// //         TObject<{b: TNumber}>,
+// //     ]>,
+// //     TObject<{c: TNumber}>,
+// // ]
+
+// console.log(A)
+
+
+
+type A = (
+    { a: 1 } & { b: 2 }
+  ) & (
+    { c: 3 } & { d: 4 }
+  )
+
+type K = keyof A
 
 const A = Type.Intersect([
     Type.Intersect([
-        Type.Object({ a: Type.Number() }),
-        Type.Object({ b: Type.Number() }),
+        Type.Object({ a: Type.Literal(1) }),
+        Type.Object({ b: Type.Literal(2) }),
     ]),
-    Type.Union([
-        Type.Object({ c: Type.Number() }),
-        Type.Object({ d: Type.Number() }),
-    ])  
+    Type.Intersect([
+        Type.Object({ c: Type.Literal(3) }),
+        Type.Object({ d: Type.Literal(4) }),
+    ]),
 ])
 
-type A = [
-    TIntersect<[
-        TObject<{a: TNumber}>,
-        TObject<{b: TNumber}>,
-    ]>,
-    TObject<{c: TNumber}>,
-]
+// const K = Type.KeyOf(A)
 
-console.log(A)
+const N = Type.Normalize(Type.Intersect([
+    Type.Number(),
+    Type.Number()
+]))
 
-const N = Type.Normalize(A)
+
+
+type T = Static<typeof N>
+console.log(JSON.stringify(N, null, 2))
 
 const K = Type.KeyOf(N)
 
 console.log(K)
 
-type O = TObject<{
-    a: TNumber;
-} | {
-    b: TNumber;
-}>
-
-type aa = keyof TA
