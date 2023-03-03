@@ -2,7 +2,7 @@
 
 <h1>TypeMap</h1>
 
-<p>Advanced Runtime Type System for TypeScript</p>
+<p>JSON Schema Runtime Type System</p>
 	
 <img src="./typemap.png" />
 

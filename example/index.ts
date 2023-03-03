@@ -16,9 +16,11 @@
 // import { TypeCompiler } from '@sinclair/typebox/compiler'
 // import * as Types from '@sinclair/typebox'
 
-import Type, { Static } from '@sinclair/typebox'
-import { Value } from '@sinclair/typebox/value'
+import Type, { Static } from 'typemap'
 
-const T = Type.Object({ x: Type.Undefined() })
 
-console.log(Value.Check(T, { x: undefined }))
+const T = Type.Extends(Type.Object({ x: Type.Undefined() }), Type.String())
+    .Then(Type.Number())
+    .Else(Type.String())
+
+

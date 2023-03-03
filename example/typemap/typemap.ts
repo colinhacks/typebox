@@ -27,9 +27,7 @@ THE SOFTWARE.
 ---------------------------------------------------------------------------*/
 
 import { TypeCompiler, ValueError, TypeCheck } from '@sinclair/typebox/compiler'
-import { Conditional } from '@sinclair/typebox/conditional'
 import { TypeSystem } from '@sinclair/typebox/system'
-import { TypeGuard } from '@sinclair/typebox/guard'
 import { Custom } from '@sinclair/typebox/custom'
 import { Value } from '@sinclair/typebox/value'
 import * as Types from '@sinclair/typebox'
@@ -168,9 +166,6 @@ export class FluentIntersect<T extends Types.TIntersect> extends FluentType<T> {
     const props = Object.keys(properties).reduce((acc, key) => ({ ...acc, [key]: properties[key].Schema }), {} as Types.TProperties) as U
     const object = Types.Type.Object(props)
     return new FluentIntersect(Types.Type.Intersect([this.Schema, object]))
-  }
-  public Omit<K extends Types.ObjectPropertyKeys<T>[]>(keys: readonly [...K]) {
-    return new FluentObject(Types.Type.Omit(this.Schema, keys))
   }
 }
 export class FluentObject<T extends Types.TObject = Types.TObject> extends FluentType<T> {
@@ -384,7 +379,7 @@ export class FluentThen<Left extends Types.TSchema, Right extends Types.TSchema,
     private readonly _true: True
   ) {}
   public Else<False extends Types.TSchema>(_false: IntoFluent<False>) {
-    return new FluentType(Conditional.Extends(this.left, this.right, this._true, _false.Schema))
+    return new FluentType(Types.Type.Extends(this.left, this.right, this._true, _false.Schema))
   }
 }
 
@@ -461,7 +456,7 @@ export class FluentTypeBuilder {
   public Record<K extends Types.TUnion<Types.TLiteral[]>, T extends Types.TSchema>(key: IntoFluent<K>, schema: IntoFluent<T>, options?: Types.ObjectOptions): FluentObject<Types.TObject<Types.TRecordProperties<K, T>>>
   public Record<K extends Types.TString | Types.TNumeric, T extends Types.TSchema>(key: IntoFluent<K>, schema: IntoFluent<T>, options?: Types.ObjectOptions): FluentRecord<Types.TRecord<K, T>>
   public Record(...args: any[]): any {
-    if(TypeGuard.TUnion(args[0].Schema) && args[0].Schema.anyOf.every((schema: Types.TSchema) => TypeGuard.TLiteral(schema))) {
+    if(Types.TypeGuard.TUnion(args[0].Schema) && args[0].Schema.anyOf.every((schema: Types.TSchema) => Types.TypeGuard.TLiteral(schema))) {
       return new FluentObject(Types.Type.Record(args[0].Schema as any, args[1].Schema) as any)
     } else {
       return new FluentRecord(Types.Type.Record(args[0].Schema as any, args[1].Schema) as any)
