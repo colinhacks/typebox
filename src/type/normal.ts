@@ -1,6 +1,6 @@
 /*--------------------------------------------------------------------------
 
-@sinclair/typebox
+@sinclair/typebox/type
 
 The MIT License (MIT)
 

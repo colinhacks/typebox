@@ -28,7 +28,6 @@ THE SOFTWARE.
 
 import { ValueErrors, ValueError } from '../errors/index'
 import { TypeSystem } from '../system/index'
-import { TypeExtends, TypeGuard } from '../guard/index'
 import { Format } from '../format/index'
 import { Custom } from '../custom/index'
 import { ValueHash } from '../hash/index'
@@ -234,7 +233,7 @@ export namespace TypeCompiler {
         yield `Object.getOwnPropertyNames(${value}).every(key => ${keys}.includes(key))`
       }
     }
-    if (TypeGuard.TSchema(schema.additionalProperties)) {
+    if (Types.TypeGuard.TSchema(schema.additionalProperties)) {
       const expression = CreateExpression(schema.additionalProperties, 'value[key]')
       const keys = `[${propertyKeys.map((key) => `'${key}'`).join(', ')}]`
       yield `(Object.getOwnPropertyNames(${value}).every(key => ${keys}.includes(key) || ${expression}))`
@@ -244,7 +243,7 @@ export namespace TypeCompiler {
       const propertySchema = schema.properties[propertyKey]
       if (schema.required && schema.required.includes(propertyKey)) {
         yield* Visit(propertySchema, memberExpression)
-        if (TypeExtends.Undefined(propertySchema)) {
+        if (Types.TypeExtends.Check(Types.Type.Undefined(), propertySchema) === Types.TypeExtendsResult.True) {
           yield `('${propertyKey}' in ${value})`
         }
       } else {
@@ -453,7 +452,7 @@ export namespace TypeCompiler {
 
   /** Returns the generated validation code used to validate this type. */
   export function Code<T extends Types.TSchema>(schema: T, references: Types.TSchema[] = []) {
-    TypeGuard.Assert(schema, references)
+    Types.TypeGuard.Assert(schema, references)
     return Build(schema, references)
   }
 

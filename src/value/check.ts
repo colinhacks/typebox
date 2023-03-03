@@ -218,7 +218,7 @@ export namespace ValueCheck {
         if (!Visit(propertySchema, references, value[propertyKey])) {
           return false
         }
-        if (Types.TypeExtends.Undefined(propertySchema)) {
+        if (Types.TypeExtends.Check(Types.Type.Undefined(), propertySchema) === Types.TypeExtendsResult.True) {
           return propertyKey in value
         }
       } else {

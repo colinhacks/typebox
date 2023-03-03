@@ -17,11 +17,8 @@
 // import * as Types from '@sinclair/typebox'
 
 import Type, { Static } from '@sinclair/typebox'
+import { Value } from '@sinclair/typebox/value'
 
-const T = Type.Object({
-  x: Type.Number(),
-})
+const T = Type.Object({ x: Type.Undefined() })
 
-const Y = Type.Extends(Type.String(), Type.String(), Type.Literal(1), Type.Literal(2))
-
-type T = Static<typeof Y>
+console.log(Value.Check(T, { x: undefined }))

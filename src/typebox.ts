@@ -26,13 +26,8 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
-import { TypeBuilder } from './type/index'
-
-/** JSON Schema Type Builder with Static Type Resolution for TypeScript */
-const Type = new TypeBuilder()
-
 export * from './type/index'
 
-export default Type
+import { Type } from './type/index'
 
-export { Type }
+export default Type
