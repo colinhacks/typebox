@@ -16,11 +16,26 @@
 // import { TypeCompiler } from '@sinclair/typebox/compiler'
 // import * as Types from '@sinclair/typebox'
 
-import Type, { Static } from 'typemap'
+import Type, { Static, TSchema } from '@sinclair/typebox'
 
 
-const T = Type.Extends(Type.Object({ x: Type.Undefined() }), Type.String())
-    .Then(Type.Number())
-    .Else(Type.String())
+const CatType = Type.Literal('Cat')
+const DogType = Type.Literal('Dog')
+const FishType = Type.Literal('Fish')
+
+const Cat = Type.Object({ type: CatType })
+const Dog  = Type.Object({ type: DogType })
+const Fish = Type.Object({ type: FishType })
+
+function Map<T extends typeof CatType | typeof DogType | typeof FishType>(type: T) {
+    return Type.Extends(type, CatType, Cat, 
+                Type.Extends(type, DogType, Dog,
+                    Type.Extends(type, FishType, Fish, 
+                        Type.Never())))
+}
+
+
+const T = Map(FishType)
+
 
 
