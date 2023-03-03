@@ -169,6 +169,9 @@ export class FluentIntersect<T extends Types.TIntersect> extends FluentType<T> {
     const object = Types.Type.Object(props)
     return new FluentIntersect(Types.Type.Intersect([this.Schema, object]))
   }
+  public Omit<K extends Types.ObjectPropertyKeys<T>[]>(keys: readonly [...K]) {
+    return new FluentObject(Types.Type.Omit(this.Schema, keys))
+  }
 }
 export class FluentObject<T extends Types.TObject = Types.TObject> extends FluentType<T> {
   public Intersect<U extends Types.TObject>(type: IntoFluent<U>) {

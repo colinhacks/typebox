@@ -28,7 +28,6 @@ THE SOFTWARE.
 
 import * as Types from '../typebox'
 import { TypeSystem } from '../system/index'
-import { TypeExtends } from '../guard/extends'
 import { Format } from '../format/index'
 import { Custom } from '../custom/index'
 import { ValueHash } from '../hash/index'
@@ -219,7 +218,7 @@ export namespace ValueCheck {
         if (!Visit(propertySchema, references, value[propertyKey])) {
           return false
         }
-        if (TypeExtends.Undefined(propertySchema)) {
+        if (Types.TypeExtends.Undefined(propertySchema)) {
           return propertyKey in value
         }
       } else {

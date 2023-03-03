@@ -9,106 +9,19 @@
 // Also, unlike union types, the order of the constituent types is preserved in order that overload resolution
 // for intersections of types with signatures can be deterministic.
 
-import { Type, TIntersect, TUnion, Kind, Static, Modifier, TSchema, SchemaOptions, IntersectReduce, IntersectEvaluate, TObject, TProperties, TNumber, UnionToIntersect } from '@sinclair/typebox'
-import { TypeGuard } from 'src/guard/guard'
-import { Value } from '@sinclair/typebox/value'
-import { TypeSystem } from '@sinclair/typebox/system'
-import { TypeCompiler } from '@sinclair/typebox/compiler'
-import * as Types from '@sinclair/typebox'
+// import { Type, TIntersect, TUnion, Kind, Static, Modifier, TSchema, SchemaOptions, IntersectReduce, IntersectEvaluate, TObject, TProperties, TNumber, UnionToIntersect } from '@sinclair/typebox'
+// import { TypeGuard } from 'src/guard/guard'
+// import { Value } from '@sinclair/typebox/value'
+// import { TypeSystem } from '@sinclair/typebox/system'
+// import { TypeCompiler } from '@sinclair/typebox/compiler'
+// import * as Types from '@sinclair/typebox'
 
-// todo: need to solve the union / intersect case. This is somewhat
-// difficult, but the normalize function needs to report correctly
-// for nested union/intersections, this involves a recursive type, plus the
-// normalization logic the type (so expensive as all hell)
+import Type, { Static } from '@sinclair/typebox'
 
+const T = Type.Object({
+  x: Type.Number(),
+})
 
-// const A = Type.Intersect([
-//     Type.Object({ b: Type.Number() }),
-//     Type.Object({ b: Type.Number() })
-// ])
+const Y = Type.Extends(Type.String(), Type.String(), Type.Literal(1), Type.Literal(2))
 
-// const B = Type.Intersect([
-//     Type.Object({ c: Type.Number() }),
-//     Type.Object({ c: Type.Number() })
-// ])
-
-// lets change the definition of Union and Intersect to be [L, R] for binary oprand
-
-// type TA = (
-//     {a: number} & {b:number}
-// ) & {c: number} | {d: number}
-
-// type TAA = keyof TA
-
-// const A = Type.Intersect([
-//     Type.Intersect([
-//         Type.Object({ a: Type.Number() }),
-//         Type.Object({ b: Type.Number() }),
-//     ]),
-//     Type.Intersect([
-//         Type.Object({ c: Type.Number() }),
-//         Type.Object({ d: Type.Number() }),
-//     ])  
-// ])
-
-// // type A = [
-// //     TIntersect<[
-// //         TObject<{a: TNumber}>,
-// //         TObject<{b: TNumber}>,
-// //     ]>,
-// //     TObject<{c: TNumber}>,
-// // ]
-
-// console.log(A)
-
-
-
-type A = (
-    { a: 1 } & { b: 2 }
-  ) & (
-    { c: 3 } & { d: 4 }
-  )
-
-type K = keyof A
-
-const A = Type.Intersect([
-    Type.Intersect([
-        Type.Object({ a: Type.Literal(1) }),
-        Type.Object({ b: Type.Literal(2) }),
-    ]),
-    Type.Intersect([
-        Type.Object({ c: Type.Literal(3) }),
-        Type.Object({ d: Type.Literal(4) }),
-    ]),
-    Type.Object({ d: Type.String() }),
-])
-
-type T = Static<typeof A>
-
-type Ks = keyof T
-
-const K = Type.KeyOf(A)
-
-console.log(K)
-
-const N = Type.Normalize(A)
-console.log(JSON.stringify(N, null, 2))
-// console.log(N)
-
-// const L = Type.Intersect([
-//     Type.Number(),
-//     Type.String()
-// ])
-
-// console.log(L)
-
-// type AAA = Static<typeof N>
-
-
-// type T = Static<typeof N>
-// console.log(JSON.stringify(N, null, 2))
-
-// const K = Type.KeyOf(N)
-
-// console.log(K)
-
+type T = Static<typeof Y>

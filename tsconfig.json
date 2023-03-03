@@ -34,6 +34,9 @@
       "@sinclair/typebox/system": [
         "src/system/index.ts"
       ],
+      "@sinclair/typebox/type": [
+        "src/type/index.ts"
+      ],
       "@sinclair/typebox/value": [
         "src/value/index.ts"
       ],

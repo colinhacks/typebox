@@ -26,25 +26,25 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
+import { TypeGuard } from './guard'
 import * as Types from '../typebox'
-import { TypeGuard } from '../guard'
 
 // --------------------------------------------------------------------------
-// StructuralResult
+// TypeExtendsResult
 // --------------------------------------------------------------------------
 
-export enum StructuralResult {
+export enum TypeExtendsResult {
   Union,
   True,
   False,
 }
 
 // --------------------------------------------------------------------------
-// Structural
+// TypeExtends
 // --------------------------------------------------------------------------
 
 /** Performs structural equivalence checks against TypeBox types. */
-export namespace Structural {
+export namespace TypeExtends {
   const referenceMap = new Map<string, Types.TAnySchema>()
 
   // ------------------------------------------------------------------------
@@ -68,9 +68,9 @@ export namespace Structural {
     return additionalProperties === false && propertyLength === 0
   }
 
-  function UnionRightRule(left: Types.TAnySchema, right: Types.TUnion): StructuralResult {
-    const result = right.anyOf.some((right: Types.TSchema) => Visit(left, right) !== StructuralResult.False)
-    return result ? StructuralResult.True : StructuralResult.False
+  function UnionRightRule(left: Types.TAnySchema, right: Types.TUnion): TypeExtendsResult {
+    const result = right.anyOf.some((right: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False)
+    return result ? TypeExtendsResult.True : TypeExtendsResult.False
   }
 
   // ------------------------------------------------------------------------
@@ -126,9 +126,9 @@ export namespace Structural {
   // Indexable
   // ------------------------------------------------------------------------
 
-  function Indexable<Left extends Types.TAnySchema, Right extends Types.TAnySchema>(left: Left, right: Types.TSchema): StructuralResult {
+  function Indexable<Left extends Types.TAnySchema, Right extends Types.TAnySchema>(left: Left, right: Types.TSchema): TypeExtendsResult {
     if (TypeGuard.TUnion(right)) {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     } else {
       return Visit(left, right)
     }
@@ -138,230 +138,230 @@ export namespace Structural {
   // Checks
   // ------------------------------------------------------------------------
 
-  function Any(left: Types.TAny, right: Types.TSchema): StructuralResult {
-    return AnyUnknownOrCustomRule(right) ? StructuralResult.True : StructuralResult.Union
+  function Any(left: Types.TAny, right: Types.TSchema): TypeExtendsResult {
+    return AnyUnknownOrCustomRule(right) ? TypeExtendsResult.True : TypeExtendsResult.Union
   }
 
-  function Array(left: Types.TArray, right: Types.TSchema): StructuralResult {
+  function Array(left: Types.TArray, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right)) {
-      if (right.properties['length'] !== undefined && right.properties['length'][Types.Kind] === 'Number') return StructuralResult.True
-      if (globalThis.Object.keys(right.properties).length === 0) return StructuralResult.True
-      return StructuralResult.False
+      if (right.properties['length'] !== undefined && right.properties['length'][Types.Kind] === 'Number') return TypeExtendsResult.True
+      if (globalThis.Object.keys(right.properties).length === 0) return TypeExtendsResult.True
+      return TypeExtendsResult.False
     } else if (!TypeGuard.TArray(right)) {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     } else if (left.items === undefined && right.items !== undefined) {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     } else if (left.items !== undefined && right.items === undefined) {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     } else if (left.items === undefined && right.items === undefined) {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     } else {
-      const result = Visit(left.items, right.items) !== StructuralResult.False
-      return result ? StructuralResult.True : StructuralResult.False
+      const result = Visit(left.items, right.items) !== TypeExtendsResult.False
+      return result ? TypeExtendsResult.True : TypeExtendsResult.False
     }
   }
 
-  function Boolean(left: Types.TBoolean, right: Types.TSchema): StructuralResult {
+  function Boolean(left: Types.TBoolean, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TBoolean(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TUnion(right)) {
       return UnionRightRule(left, right)
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
-  function Constructor(left: Types.TConstructor, right: Types.TSchema): StructuralResult {
+  function Constructor(left: Types.TConstructor, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right) && globalThis.Object.keys(right.properties).length === 0) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (!TypeGuard.TConstructor(right)) {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     } else if (right.parameters.length < left.parameters.length) {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     } else {
-      if (Visit(left.returns, right.returns) === StructuralResult.False) {
-        return StructuralResult.False
+      if (Visit(left.returns, right.returns) === TypeExtendsResult.False) {
+        return TypeExtendsResult.False
       }
       for (let i = 0; i < left.parameters.length; i++) {
         const result = Visit(right.parameters[i], left.parameters[i])
-        if (result === StructuralResult.False) return StructuralResult.False
+        if (result === TypeExtendsResult.False) return TypeExtendsResult.False
       }
-      return StructuralResult.True
+      return TypeExtendsResult.True
     }
   }
 
-  function Date(left: Types.TDate, right: Types.TSchema): StructuralResult {
+  function Date(left: Types.TDate, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TRecord(right)) {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     } else if (TypeGuard.TDate(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TUnion(right)) {
       return UnionRightRule(left, right)
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
-  function Function(left: Types.TFunction, right: Types.TSchema): StructuralResult {
+  function Function(left: Types.TFunction, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right)) {
-      if (right.properties['length'] !== undefined && right.properties['length'][Types.Kind] === 'Number') return StructuralResult.True
-      if (globalThis.Object.keys(right.properties).length === 0) return StructuralResult.True
-      return StructuralResult.False
+      if (right.properties['length'] !== undefined && right.properties['length'][Types.Kind] === 'Number') return TypeExtendsResult.True
+      if (globalThis.Object.keys(right.properties).length === 0) return TypeExtendsResult.True
+      return TypeExtendsResult.False
     } else if (!TypeGuard.TFunction(right)) {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     } else if (right.parameters.length < left.parameters.length) {
-      return StructuralResult.False
-    } else if (Visit(left.returns, right.returns) === StructuralResult.False) {
-      return StructuralResult.False
+      return TypeExtendsResult.False
+    } else if (Visit(left.returns, right.returns) === TypeExtendsResult.False) {
+      return TypeExtendsResult.False
     } else {
       for (let i = 0; i < left.parameters.length; i++) {
         const result = Visit(right.parameters[i], left.parameters[i])
-        if (result === StructuralResult.False) return StructuralResult.False
+        if (result === TypeExtendsResult.False) return TypeExtendsResult.False
       }
-      return StructuralResult.True
+      return TypeExtendsResult.True
     }
   }
 
-  function Integer(left: Types.TInteger, right: Types.TSchema): StructuralResult {
+  function Integer(left: Types.TInteger, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TInteger(right) || TypeGuard.TNumber(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TUnion(right)) {
       return UnionRightRule(left, right)
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
-  function Literal(left: Types.TLiteral, right: Types.TSchema): StructuralResult {
+  function Literal(left: Types.TLiteral, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TRecord(right)) {
       if (typeof left.const === 'string') {
         return Indexable(left, RecordValue(right as Types.TRecord))
       } else {
-        return StructuralResult.False
+        return TypeExtendsResult.False
       }
     } else if (TypeGuard.TLiteral(right) && left.const === right.const) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TString(right) && typeof left.const === 'string') {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TNumber(right) && typeof left.const === 'number') {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TInteger(right) && typeof left.const === 'number') {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TBoolean(right) && typeof left.const === 'boolean') {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TUnion(right)) {
       return UnionRightRule(left, right)
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
-  function Number(left: Types.TNumber, right: Types.TSchema): StructuralResult {
+  function Number(left: Types.TNumber, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TNumber(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TInteger(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TUnion(right)) {
       return UnionRightRule(left, right)
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
-  function Null(left: Types.TNull, right: Types.TSchema): StructuralResult {
+  function Null(left: Types.TNull, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TNull(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TUnion(right)) {
       return UnionRightRule(left, right)
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
   function Properties(left: Map<string, Types.TSchema>, right: Map<string, Types.TSchema>) {
-    if (right.size > left.size) return StructuralResult.False
-    if (![...right.keys()].every((rightKey) => left.has(rightKey))) return StructuralResult.False
+    if (right.size > left.size) return TypeExtendsResult.False
+    if (![...right.keys()].every((rightKey) => left.has(rightKey))) return TypeExtendsResult.False
     for (const rightKey of right.keys()) {
       const leftProp = left.get(rightKey)!
       const rightProp = right.get(rightKey)!
-      if (Visit(leftProp, rightProp) === StructuralResult.False) {
-        return StructuralResult.False
+      if (Visit(leftProp, rightProp) === TypeExtendsResult.False) {
+        return TypeExtendsResult.False
       }
     }
-    return StructuralResult.True
+    return TypeExtendsResult.True
   }
 
-  function Object(left: Types.TObject, right: Types.TAnySchema): StructuralResult {
+  function Object(left: Types.TObject, right: Types.TAnySchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right)) {
       return Properties(PropertyMap(left), PropertyMap(right))
     } else if (TypeGuard.TRecord(right)) {
       if (!RecordNumberOrStringKey(right as Types.TRecord)) {
         return Properties(PropertyMap(left), PropertyMap(right))
       } else {
-        return StructuralResult.True
+        return TypeExtendsResult.True
       }
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
-  function Promise(left: Types.TPromise, right: Types.TSchema): StructuralResult {
+  function Promise(left: Types.TPromise, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right)) {
       if (ObjectRightRule(left, right) || globalThis.Object.keys(right.properties).length === 0) {
-        return StructuralResult.True
+        return TypeExtendsResult.True
       } else {
-        return StructuralResult.False
+        return TypeExtendsResult.False
       }
     } else if (!TypeGuard.TPromise(right)) {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     } else {
-      const result = Visit(left.item, right.item) !== StructuralResult.False
-      return result ? StructuralResult.True : StructuralResult.False
+      const result = Visit(left.item, right.item) !== TypeExtendsResult.False
+      return result ? TypeExtendsResult.True : TypeExtendsResult.False
     }
   }
 
-  function Record(left: Types.TRecord, right: Types.TSchema): StructuralResult {
+  function Record(left: Types.TRecord, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right)) {
       if (RecordPattern(left) === '^.*$' && right[Types.Hint] === 'Record') {
-        return StructuralResult.True
+        return TypeExtendsResult.True
       } else if (RecordPattern(left) === '^.*$') {
-        return StructuralResult.False
+        return TypeExtendsResult.False
       } else {
-        return globalThis.Object.keys(right.properties).length === 0 ? StructuralResult.True : StructuralResult.False
+        return globalThis.Object.keys(right.properties).length === 0 ? TypeExtendsResult.True : TypeExtendsResult.False
       }
     } else if (TypeGuard.TRecord(right)) {
       if (!RecordNumberOrStringKey(left as Types.TRecord) && !RecordNumberOrStringKey(right as Types.TRecord)) {
@@ -369,153 +369,153 @@ export namespace Structural {
       } else if (RecordNumberOrStringKey(left as Types.TRecord) && !RecordNumberOrStringKey(right as Types.TRecord)) {
         const leftKey = RecordKey(left as Types.TRecord)
         const rightKey = RecordKey(right as Types.TRecord)
-        if (Visit(rightKey, leftKey) === StructuralResult.False) {
-          return StructuralResult.False
+        if (Visit(rightKey, leftKey) === TypeExtendsResult.False) {
+          return TypeExtendsResult.False
         } else {
-          return StructuralResult.True
+          return TypeExtendsResult.True
         }
       } else {
-        return StructuralResult.True
+        return TypeExtendsResult.True
       }
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
-  function Ref(left: Types.TRef, right: Types.TSchema): StructuralResult {
+  function Ref(left: Types.TRef, right: Types.TSchema): TypeExtendsResult {
     if (!referenceMap.has(left.$ref)) throw Error(`Cannot locate referenced $id '${left.$ref}'`)
     const resolved = referenceMap.get(left.$ref)!
     return Visit(resolved, right)
   }
 
-  function Self(left: Types.TSelf, right: Types.TSchema): StructuralResult {
+  function Self(left: Types.TSelf, right: Types.TSchema): TypeExtendsResult {
     if (!referenceMap.has(left.$ref)) throw Error(`Cannot locate referenced self $id '${left.$ref}'`)
     const resolved = referenceMap.get(left.$ref)!
     return Visit(resolved, right)
   }
 
-  function String(left: Types.TString, right: Types.TSchema): StructuralResult {
+  function String(left: Types.TString, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TRecord(right)) {
       return Indexable(left, RecordValue(right))
     } else if (TypeGuard.TString(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TUnion(right)) {
       return UnionRightRule(left, right)
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
-  function Tuple(left: Types.TTuple, right: Types.TSchema): StructuralResult {
+  function Tuple(left: Types.TTuple, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right)) {
       const result = ObjectRightRule(left, right) || globalThis.Object.keys(right.properties).length === 0
-      return result ? StructuralResult.True : StructuralResult.False
+      return result ? TypeExtendsResult.True : TypeExtendsResult.False
     } else if (TypeGuard.TRecord(right)) {
       return Indexable(left, RecordValue(right))
     } else if (TypeGuard.TArray(right)) {
       if (right.items === undefined) {
-        return StructuralResult.False
+        return TypeExtendsResult.False
       } else if (TypeGuard.TUnion(right.items) && left.items) {
-        const result = left.items.every((left: Types.TSchema) => UnionRightRule(left, right.items as Types.TUnion) !== StructuralResult.False)
-        return result ? StructuralResult.True : StructuralResult.False
+        const result = left.items.every((left: Types.TSchema) => UnionRightRule(left, right.items as Types.TUnion) !== TypeExtendsResult.False)
+        return result ? TypeExtendsResult.True : TypeExtendsResult.False
       } else if (TypeGuard.TAny(right.items)) {
-        return StructuralResult.True
+        return TypeExtendsResult.True
       } else {
-        return StructuralResult.False
+        return TypeExtendsResult.False
       }
     }
-    if (!TypeGuard.TTuple(right)) return StructuralResult.False
-    if (left.items === undefined && right.items === undefined) return StructuralResult.True
-    if (left.items === undefined && right.items !== undefined) return StructuralResult.False
-    if (left.items !== undefined && right.items === undefined) return StructuralResult.False
-    if (left.items === undefined && right.items === undefined) return StructuralResult.True
-    if (left.minItems !== right.minItems || left.maxItems !== right.maxItems) return StructuralResult.False
+    if (!TypeGuard.TTuple(right)) return TypeExtendsResult.False
+    if (left.items === undefined && right.items === undefined) return TypeExtendsResult.True
+    if (left.items === undefined && right.items !== undefined) return TypeExtendsResult.False
+    if (left.items !== undefined && right.items === undefined) return TypeExtendsResult.False
+    if (left.items === undefined && right.items === undefined) return TypeExtendsResult.True
+    if (left.minItems !== right.minItems || left.maxItems !== right.maxItems) return TypeExtendsResult.False
     for (let i = 0; i < left.items!.length; i++) {
-      if (Visit(left.items![i], right.items![i]) === StructuralResult.False) return StructuralResult.False
+      if (Visit(left.items![i], right.items![i]) === TypeExtendsResult.False) return TypeExtendsResult.False
     }
-    return StructuralResult.True
+    return TypeExtendsResult.True
   }
 
-  function Uint8Array(left: Types.TUint8Array, right: Types.TSchema): StructuralResult {
+  function Uint8Array(left: Types.TUint8Array, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TRecord(right)) {
       return Indexable(left, RecordValue(right as Types.TRecord))
     } else if (TypeGuard.TUint8Array(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TUnion(right)) {
       return UnionRightRule(left, right)
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
-  function Undefined(left: Types.TUndefined, right: Types.TSchema): StructuralResult {
+  function Undefined(left: Types.TUndefined, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TUndefined(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TVoid(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TUnion(right)) {
       return UnionRightRule(left, right)
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
-  function Union(left: Types.TUnion, right: Types.TSchema): StructuralResult {
+  function Union(left: Types.TUnion, right: Types.TSchema): TypeExtendsResult {
     if (left.anyOf.some((left: Types.TSchema) => TypeGuard.TAny(left))) {
-      return StructuralResult.Union
+      return TypeExtendsResult.Union
     } else if (TypeGuard.TUnion(right)) {
-      const result = left.anyOf.every((left: Types.TSchema) => right.anyOf.some((right: Types.TSchema) => Visit(left, right) !== StructuralResult.False))
-      return result ? StructuralResult.True : StructuralResult.False
+      const result = left.anyOf.every((left: Types.TSchema) => right.anyOf.some((right: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False))
+      return result ? TypeExtendsResult.True : TypeExtendsResult.False
     } else {
-      const result = left.anyOf.every((left: Types.TSchema) => Visit(left, right) !== StructuralResult.False)
-      return result ? StructuralResult.True : StructuralResult.False
+      const result = left.anyOf.every((left: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False)
+      return result ? TypeExtendsResult.True : TypeExtendsResult.False
     }
   }
 
-  function Unknown(left: Types.TUnknown, right: Types.TSchema): StructuralResult {
+  function Unknown(left: Types.TUnknown, right: Types.TSchema): TypeExtendsResult {
     if (TypeGuard.TUnion(right)) {
       const result = right.anyOf.some((right: Types.TSchema) => TypeGuard.TAny(right) || TypeGuard.TUnknown(right))
-      return result ? StructuralResult.True : StructuralResult.False
+      return result ? TypeExtendsResult.True : TypeExtendsResult.False
     } else if (TypeGuard.TAny(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TUnknown(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
-  function Void(left: Types.TVoid, right: Types.TSchema): StructuralResult {
+  function Void(left: Types.TVoid, right: Types.TSchema): TypeExtendsResult {
     if (TypeGuard.TUnion(right)) {
       const result = right.anyOf.some((right: Types.TSchema) => TypeGuard.TAny(right) || TypeGuard.TUnknown(right))
-      return result ? StructuralResult.True : StructuralResult.False
+      return result ? TypeExtendsResult.True : TypeExtendsResult.False
     } else if (TypeGuard.TAny(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TUnknown(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else if (TypeGuard.TVoid(right)) {
-      return StructuralResult.True
+      return TypeExtendsResult.True
     } else {
-      return StructuralResult.False
+      return TypeExtendsResult.False
     }
   }
 
   let recursionDepth = 0
-  function Visit<Left extends Types.TAnySchema, Right extends Types.TAnySchema>(left: Left, right: Types.TSchema): StructuralResult {
+  function Visit<Left extends Types.TAnySchema, Right extends Types.TAnySchema>(left: Left, right: Types.TSchema): TypeExtendsResult {
     recursionDepth += 1
-    if (recursionDepth >= 1000) return StructuralResult.True
+    if (recursionDepth >= 1000) return TypeExtendsResult.True
     if (left.$id !== undefined) referenceMap.set(left.$id!, left)
     if (right.$id !== undefined) referenceMap.set(right.$id!, right)
     const resolvedRight = right[Types.Kind] === 'Self' ? referenceMap.get(right.$ref)! : right
@@ -571,7 +571,7 @@ export namespace Structural {
   }
 
   /** Structurally tests if the left schema extends the right. */
-  export function Check(left: Types.TSchema, right: Types.TSchema): StructuralResult {
+  export function Check(left: Types.TSchema, right: Types.TSchema): TypeExtendsResult {
     referenceMap.clear()
     recursionDepth = 0
     return Visit(left, right)
