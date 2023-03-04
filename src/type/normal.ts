@@ -34,7 +34,7 @@ import * as Types from './type'
 export namespace TypeNormal {
   function NormalizeProperty(current: Types.TSchema, next: Types.TSchema): Types.TSchema {
     if (TypeGuard.TNever(current)) return current
-    return TypeExtends.Check(next, current) === TypeExtendsResult.True ? Types.Type.Intersect([next, current]) : Types.Type.Never()
+    return TypeExtends.Extends(next, current) === TypeExtendsResult.True ? Types.Type.Intersect([next, current]) : Types.Type.Never()
   }
   function NormalizeProperties(current: Types.TProperties, next: Types.TProperties) {
     const properties = ValueClone.Clone(current)

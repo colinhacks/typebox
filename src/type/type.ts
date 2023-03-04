@@ -744,7 +744,7 @@ export namespace Type {
 
   /** `Standard` Creates a conditional type expression  */
   export function Extends<L extends TSchema, R extends TSchema, T extends TSchema, U extends TSchema>(leftType: L, rightType: R, trueType: T, falseType: U): TExtends<L, R, T, U> {
-    switch (TypeExtends.Check(leftType, rightType)) {
+    switch (TypeExtends.Extends(leftType, rightType)) {
       case TypeExtendsResult.Union:
         return Union([ValueClone.Clone(trueType), ValueClone.Clone(falseType)]) as any as TExtends<L, R, T, U>
       case TypeExtendsResult.True:
@@ -758,7 +758,7 @@ export namespace Type {
   export function Exclude<T extends TUnion, U extends TUnion>(unionType: T, excludedMembers: U, options: SchemaOptions = {}): TExclude<T, U> {
     const anyOf = unionType.anyOf
       .filter((schema) => {
-        const check = TypeExtends.Check(schema, excludedMembers)
+        const check = TypeExtends.Extends(schema, excludedMembers)
         return !(check === TypeExtendsResult.True || check === TypeExtendsResult.Union)
       })
       .map((schema) => ValueClone.Clone(schema))
@@ -768,10 +768,10 @@ export namespace Type {
   /** `Standard` Constructs a type by extracting from Type all union members that are assignable to Union. */
   export function Extract<T extends TSchema, U extends TUnion>(type: T, union: U, options: SchemaOptions = {}): TExtract<T, U> {
     if (TypeGuard.TUnion(type)) {
-      const anyOf = type.anyOf.filter((schema: TSchema) => TypeExtends.Check(schema, union) === TypeExtendsResult.True).map((schema: TSchema) => ValueClone.Clone(schema))
+      const anyOf = type.anyOf.filter((schema: TSchema) => TypeExtends.Extends(schema, union) === TypeExtendsResult.True).map((schema: TSchema) => ValueClone.Clone(schema))
       return Union(anyOf, options) as TExtract<T, U>
     } else {
-      const anyOf = union.anyOf.filter((schema) => TypeExtends.Check(type, schema) === TypeExtendsResult.True).map((schema) => ValueClone.Clone(schema))
+      const anyOf = union.anyOf.filter((schema) => TypeExtends.Extends(type, schema) === TypeExtendsResult.True).map((schema) => ValueClone.Clone(schema))
       return Union(anyOf, options) as TExtract<T, U>
     }
   }

@@ -23,7 +23,6 @@ export enum TypeExtendsResult {
   True,
   False,
 }
-
 export namespace TypeExtends {
   // ------------------------------------------------------------------------------------------
   // Primitive Sets
@@ -56,13 +55,13 @@ export namespace TypeExtends {
   function UnionRight(left: Types.TSchema, right: Types.TUnion): TypeExtendsResult {
     return right.anyOf.some((schema) => Visit(left, schema) === TypeExtendsResult.True) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
-  export function Union(left: Types.TUnion, right: Types.TSchema) {
+  function Union(left: Types.TUnion, right: Types.TSchema) {
     return left.anyOf.every((schema) => Visit(schema, right) === TypeExtendsResult.True) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
   // ------------------------------------------------------------------------------------------
   // Any
   // ------------------------------------------------------------------------------------------
-  export function Any(left: Types.TAny, right: Types.TSchema) {
+  function Any(left: Types.TAny, right: Types.TSchema) {
     return TypeGuard.TIntersect(right) ||
       TypeGuard.TUnion(right) ||
       TypeGuard.TNever(right) ||
@@ -84,9 +83,8 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
-
-    if (TypeGuard.TPrimitive(right)) return primitives.get(left[Types.Kind])!.has(right[Types.Kind]) ? TypeExtendsResult.True : TypeExtendsResult.False
-    return TypeExtendsResult.False
+    if (!TypeGuard.TPrimitive(right)) return TypeExtendsResult.False
+    return primitives.get(left[Types.Kind])!.has(right[Types.Kind]) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
   // ------------------------------------------------------------------------------------------
   // Literal
@@ -115,6 +113,18 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TRecord(right)) {
+      const keyschema = GetRecordKey(right)
+      const valueschema = GetRecordValue(right)
+      // note: if not string, then we assume right record to be an empty set.
+      if (!TypeGuard.TString(keyschema)) return TypeExtendsResult.True
+      for (const key of globalThis.Object.keys(left.properties)) {
+        if (Property(left.properties[key], valueschema) === TypeExtendsResult.False) {
+          return TypeExtendsResult.False
+        }
+      }
+      return TypeExtendsResult.True
+    }
     if (!TypeGuard.TObject(right)) return TypeExtendsResult.False
     for (const key of globalThis.Object.keys(right.properties)) {
       if (!(key in left.properties)) continue
@@ -123,6 +133,36 @@ export namespace TypeExtends {
       }
     }
     return TypeExtendsResult.True
+  }
+  // ------------------------------------------------------------------------------------------
+  // Record
+  // ------------------------------------------------------------------------------------------
+  function GetRecordKey(schema: Types.TRecord) {
+    if ('^(0|[1-9][0-9]*)$' in schema.patternProperties) return { [Types.Kind]: 'Number', type: 'number' }
+    if ('^.*$' in schema.patternProperties) return { [Types.Kind]: 'String', type: 'string' }
+    throw Error('TypeExtends: Cannot get record value')
+  }
+  function GetRecordValue(schema: Types.TRecord) {
+    if ('^(0|[1-9][0-9]*)$' in schema.patternProperties) return schema.patternProperties['^(0|[1-9][0-9]*)$']
+    if ('^.*$' in schema.patternProperties) return schema.patternProperties['^.*$']
+    throw Error('TypeExtends: Cannot get record value')
+  }
+  function Record(left: Types.TRecord, right: Types.TSchema) {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right)) {
+      const valueschema = GetRecordValue(left)
+      for (const key of globalThis.Object.keys(right.properties)) {
+        if (Property(valueschema, right.properties[key]) === TypeExtendsResult.False) {
+          return TypeExtendsResult.False
+        }
+      }
+      return TypeExtendsResult.True
+    }
+    if (!TypeGuard.TRecord(right)) return TypeExtendsResult.False
+    return Visit(GetRecordValue(left), GetRecordValue(right))
   }
   // ------------------------------------------------------------------------------------------
   // Array
@@ -235,6 +275,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUint8Array(left)) return Uint8Array(left, resolvedRight)
     if (TypeGuard.TFunction(left)) return Function(left, resolvedRight)
     if (TypeGuard.TConstructor(left)) return Constructor(left, resolvedRight)
+    if (TypeGuard.TRecord(left)) return Record(left, resolvedRight)
     if (TypeGuard.TUserDefined(left)) throw Error(`TypeExtends: Cannot structurally compare custom type '${left[Types.Kind]}'`)
     throw Error(`TypeExtends: Unknown left operand '${left[Types.Kind]}'`)
   }
@@ -245,9 +286,9 @@ export namespace TypeExtends {
 
 type AAA = number extends any ? 1 : 2
 
-type P = (new (a: number) => void) extends new (a: number) => any ? true : false
+const R = TypeExtends.Extends(Type.Record(Type.String(), Type.Number()), Type.Array(Type.Number()))
 
-const R = TypeExtends.Extends(Type.Constructor([Type.Number()], Type.Void()), Type.Constructor([Type.Number()], Type.Any()))
+type P = Record<string, number> extends [] ? true : false
 
 console.log(TypeExtendsResult[R])
 

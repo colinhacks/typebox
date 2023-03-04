@@ -29,579 +29,268 @@ THE SOFTWARE.
 import { TypeGuard } from './guard'
 import * as Types from '../typebox'
 
-// --------------------------------------------------------------------------
-// TypeExtendsResult
-// --------------------------------------------------------------------------
-
 export enum TypeExtendsResult {
   Union,
   True,
   False,
 }
-
-// --------------------------------------------------------------------------
-// TypeExtends
-// --------------------------------------------------------------------------
-
-/** Performs structural equivalence checks against TypeBox types. */
 export namespace TypeExtends {
-  const referenceMap = new Map<string, Types.TAnySchema>()
+  // ------------------------------------------------------------------------------------------
+  // Primitive Sets
+  // ------------------------------------------------------------------------------------------
+  // prettier-ignore
+  const primitives = new Map<string, Set<string>>([
+    ['Unknown',   new Set(['Any', 'Unknown'])],
+    ['String',    new Set(['Any', 'Unknown', 'String'])],
+    ['Boolean',   new Set(['Any', 'Unknown', 'Boolean'])],
+    ['Number',    new Set(['Any', 'Unknown', 'Integer', 'Number'])],
+    ['Integer',   new Set(['Any', 'Unknown', 'Number', 'Integer'])],
+    ['Undefined', new Set(['Any', 'Unknown', 'Void', 'Undefined'])],
+    ['Null',      new Set(['Any', 'Unknown', 'Null'])],
+    ['Void',      new Set(['Any', 'Unknown'])],
+    ['Never',     new Set(['Never'])],
+  ])
 
-  // ------------------------------------------------------------------------
-  // Rules
-  // ------------------------------------------------------------------------
-
-  function AnyUnknownOrCustomRule(right: Types.TSchema) {
-    // https://github.com/microsoft/TypeScript/issues/40049
-    if (TypeGuard.TUnion(right) && right.anyOf.some((schema: Types.TSchema) => schema[Types.Kind] === 'Any' || schema[Types.Kind] === 'Unknown')) return true
-    if (TypeGuard.TUnknown(right)) return true
-    if (TypeGuard.TAny(right)) return true
-    if (TypeGuard.TUserDefined(right)) throw Error(`Structural: Cannot structurally compare custom type '${right[Types.Kind]}'`)
-    return false
+  // ------------------------------------------------------------------------------------------
+  // Intersect
+  // ------------------------------------------------------------------------------------------
+  function IntersectRight(left: Types.TSchema, right: Types.TIntersect): TypeExtendsResult {
+    return right.allOf.every((schema) => Visit(left, schema) === TypeExtendsResult.True) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
-
-  function ObjectRightRule(left: Types.TAnySchema, right: Types.TObject) {
-    // type A = boolean extends {}     ? 1 : 2 // additionalProperties: false
-    // type B = boolean extends object ? 1 : 2 // additionalProperties: true
-    const additionalProperties = right.additionalProperties
-    const propertyLength = globalThis.Object.keys(right.properties).length
-    return additionalProperties === false && propertyLength === 0
+  function Intersect(left: Types.TIntersect, right: Types.TSchema) {
+    return left.allOf.some((schema) => Visit(schema, right) === TypeExtendsResult.True) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
-
-  function UnionRightRule(left: Types.TAnySchema, right: Types.TUnion): TypeExtendsResult {
-    const result = right.anyOf.some((right: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False)
-    return result ? TypeExtendsResult.True : TypeExtendsResult.False
+  // ------------------------------------------------------------------------------------------
+  // Union
+  // ------------------------------------------------------------------------------------------
+  function UnionRight(left: Types.TSchema, right: Types.TUnion): TypeExtendsResult {
+    return right.anyOf.some((schema) => Visit(left, schema) === TypeExtendsResult.True) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
-
-  // ------------------------------------------------------------------------
-  // Records
-  // ------------------------------------------------------------------------
-
-  function RecordPattern(schema: Types.TRecord) {
-    return globalThis.Object.keys(schema.patternProperties)[0] as string
+  function Union(left: Types.TUnion, right: Types.TSchema) {
+    return left.anyOf.every((schema) => Visit(schema, right) === TypeExtendsResult.True) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
-
-  function RecordNumberOrStringKey(schema: Types.TRecord) {
-    const pattern = RecordPattern(schema)
-    return pattern === '^.*$' || pattern === '^(0|[1-9][0-9]*)$'
+  // ------------------------------------------------------------------------------------------
+  // Any
+  // ------------------------------------------------------------------------------------------
+  function Any(left: Types.TAny, right: Types.TSchema) {
+    return TypeGuard.TIntersect(right) ||
+      TypeGuard.TUnion(right) ||
+      TypeGuard.TNever(right) ||
+      TypeGuard.TObject(right) ||
+      TypeGuard.TArray(right) ||
+      TypeGuard.TTuple(right) ||
+      TypeGuard.TUint8Array(right) ||
+      TypeGuard.TDate(right) ||
+      TypeGuard.TFunction(right) ||
+      TypeGuard.TConstructor(right)
+      ? TypeExtendsResult.Union
+      : TypeExtendsResult.True
   }
-
-  function RecordValue(schema: Types.TRecord) {
-    const pattern = RecordPattern(schema)
-    return schema.patternProperties[pattern]
+  // ------------------------------------------------------------------------------------------
+  // Primitive
+  // ------------------------------------------------------------------------------------------
+  function Primitive(left: Types.TPrimitive, right: Types.TSchema): TypeExtendsResult {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (!TypeGuard.TPrimitive(right)) return TypeExtendsResult.False
+    return primitives.get(left[Types.Kind])!.has(right[Types.Kind]) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
-
-  function RecordKey(schema: Types.TRecord) {
-    const pattern = RecordPattern(schema)
-    if (pattern === '^.*$') {
-      return Types.Type.String()
-    } else if (pattern === '^(0|[1-9][0-9]*)$') {
-      return Types.Type.Number()
-    } else {
-      const keys = pattern.slice(1, pattern.length - 1).split('|')
-      const schemas = keys.map((key) => (isNaN(+key) ? Types.Type.Literal(key) : Types.Type.Literal(parseFloat(key))))
-      return Types.Type.Union(schemas)
-    }
-  }
-
-  function PropertyMap(schema: Types.TObject | Types.TRecord) {
-    const comparable = new Map<string, Types.TSchema>()
-    if (TypeGuard.TRecord(schema)) {
-      const propertyPattern = RecordPattern(schema as Types.TRecord)
-      if (propertyPattern === '^.*$' || propertyPattern === '^(0|[1-9][0-9]*)$') throw Error('Cannot extract record properties without property constraints')
-      const propertySchema = schema.patternProperties[propertyPattern] as Types.TSchema
-      const propertyKeys = propertyPattern.slice(1, propertyPattern.length - 1).split('|')
-      propertyKeys.forEach((propertyKey) => {
-        comparable.set(propertyKey, propertySchema)
-      })
-    } else {
-      globalThis.Object.entries(schema.properties).forEach(([propertyKey, propertySchema]) => {
-        comparable.set(propertyKey, propertySchema as Types.TSchema)
-      })
-    }
-    return comparable
-  }
-
-  // ------------------------------------------------------------------------
-  // Indexable
-  // ------------------------------------------------------------------------
-
-  function Indexable<Left extends Types.TAnySchema, Right extends Types.TAnySchema>(left: Left, right: Types.TSchema): TypeExtendsResult {
-    if (TypeGuard.TUnion(right)) {
-      return TypeExtendsResult.False
-    } else {
-      return Visit(left, right)
-    }
-  }
-
-  // ------------------------------------------------------------------------
-  // Checks
-  // ------------------------------------------------------------------------
-
-  function Any(left: Types.TAny, right: Types.TSchema): TypeExtendsResult {
-    return AnyUnknownOrCustomRule(right) ? TypeExtendsResult.True : TypeExtendsResult.Union
-  }
-
-  function Array(left: Types.TArray, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right)) {
-      if (right.properties['length'] !== undefined && right.properties['length'][Types.Kind] === 'Number') return TypeExtendsResult.True
-      if (globalThis.Object.keys(right.properties).length === 0) return TypeExtendsResult.True
-      return TypeExtendsResult.False
-    } else if (!TypeGuard.TArray(right)) {
-      return TypeExtendsResult.False
-    } else if (left.items === undefined && right.items !== undefined) {
-      return TypeExtendsResult.False
-    } else if (left.items !== undefined && right.items === undefined) {
-      return TypeExtendsResult.False
-    } else if (left.items === undefined && right.items === undefined) {
-      return TypeExtendsResult.False
-    } else {
-      const result = Visit(left.items, right.items) !== TypeExtendsResult.False
-      return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    }
-  }
-
-  function Boolean(left: Types.TBoolean, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TBoolean(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TUnion(right)) {
-      return UnionRightRule(left, right)
-    } else {
-      return TypeExtendsResult.False
-    }
-  }
-
-  function Constructor(left: Types.TConstructor, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right) && globalThis.Object.keys(right.properties).length === 0) {
-      return TypeExtendsResult.True
-    } else if (!TypeGuard.TConstructor(right)) {
-      return TypeExtendsResult.False
-    } else if (right.parameters.length < left.parameters.length) {
-      return TypeExtendsResult.False
-    } else {
-      if (Visit(left.returns, right.returns) === TypeExtendsResult.False) {
-        return TypeExtendsResult.False
-      }
-      for (let i = 0; i < left.parameters.length; i++) {
-        const result = Visit(right.parameters[i], left.parameters[i])
-        if (result === TypeExtendsResult.False) return TypeExtendsResult.False
-      }
-      return TypeExtendsResult.True
-    }
-  }
-
-  function Date(left: Types.TDate, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TRecord(right)) {
-      return TypeExtendsResult.False
-    } else if (TypeGuard.TDate(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TUnion(right)) {
-      return UnionRightRule(left, right)
-    } else {
-      return TypeExtendsResult.False
-    }
-  }
-
-  function Function(left: Types.TFunction, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right)) {
-      if (right.properties['length'] !== undefined && right.properties['length'][Types.Kind] === 'Number') return TypeExtendsResult.True
-      if (globalThis.Object.keys(right.properties).length === 0) return TypeExtendsResult.True
-      return TypeExtendsResult.False
-    } else if (!TypeGuard.TFunction(right)) {
-      return TypeExtendsResult.False
-    } else if (right.parameters.length < left.parameters.length) {
-      return TypeExtendsResult.False
-    } else if (Visit(left.returns, right.returns) === TypeExtendsResult.False) {
-      return TypeExtendsResult.False
-    } else {
-      for (let i = 0; i < left.parameters.length; i++) {
-        const result = Visit(right.parameters[i], left.parameters[i])
-        if (result === TypeExtendsResult.False) return TypeExtendsResult.False
-      }
-      return TypeExtendsResult.True
-    }
-  }
-
-  function Integer(left: Types.TInteger, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TInteger(right) || TypeGuard.TNumber(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TUnion(right)) {
-      return UnionRightRule(left, right)
-    } else {
-      return TypeExtendsResult.False
-    }
-  }
-
-  function Intersect(left: Types.TIntersect, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TIntersect(right)) {
-      const result = right.allOf.every((rightSchema: Types.TSchema) => Visit(left, rightSchema) !== TypeExtendsResult.False)
-      return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    } else if (TypeGuard.TUnion(right)) {
-      const result = right.anyOf.some((rightSchema: Types.TSchema) => Visit(left, rightSchema) !== TypeExtendsResult.False)
-      return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    } else {
-      const result = left.allOf.some((left: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False)
-      return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    }
-  }
-
+  // ------------------------------------------------------------------------------------------
+  // Literal
+  // ------------------------------------------------------------------------------------------
   function Literal(left: Types.TLiteral, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TRecord(right)) {
-      if (typeof left.const === 'string') {
-        return Indexable(left, RecordValue(right as Types.TRecord))
-      } else {
-        return TypeExtendsResult.False
-      }
-    } else if (TypeGuard.TLiteral(right) && left.const === right.const) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TString(right) && typeof left.const === 'string') {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TNumber(right) && typeof left.const === 'number') {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TInteger(right) && typeof left.const === 'number') {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TBoolean(right) && typeof left.const === 'boolean') {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TUnion(right)) {
-      return UnionRightRule(left, right)
-    } else {
-      return TypeExtendsResult.False
-    }
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TLiteral(right) && right.const === left.const) return TypeExtendsResult.True
+    if (typeof left.const === 'string' && TypeGuard.TString(right)) return TypeExtendsResult.True
+    if (typeof left.const === 'number' && TypeGuard.TNumber(right)) return TypeExtendsResult.True
+    if (typeof left.const === 'boolean' && TypeGuard.TBoolean(right)) return TypeExtendsResult.True
+    return TypeExtendsResult.False
   }
-
-  function Number(left: Types.TNumber, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TNumber(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TInteger(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TUnion(right)) {
-      return UnionRightRule(left, right)
-    } else {
-      return TypeExtendsResult.False
-    }
-  }
-
-  function Null(left: Types.TNull, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TNull(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TUnion(right)) {
-      return UnionRightRule(left, right)
-    } else {
-      return TypeExtendsResult.False
-    }
-  }
-
-  function Properties(left: Map<string, Types.TSchema>, right: Map<string, Types.TSchema>) {
-    if (right.size > left.size) return TypeExtendsResult.False
-    if (![...right.keys()].every((rightKey) => left.has(rightKey))) return TypeExtendsResult.False
-    for (const rightKey of right.keys()) {
-      const leftProp = left.get(rightKey)!
-      const rightProp = right.get(rightKey)!
-      if (Visit(leftProp, rightProp) === TypeExtendsResult.False) {
-        return TypeExtendsResult.False
-      }
-    }
+  // ------------------------------------------------------------------------------------------
+  // Object
+  // ------------------------------------------------------------------------------------------
+  function Property(left: Types.TSchema, right: Types.TSchema) {
+    if (Visit(left, right) === TypeExtendsResult.False) return TypeExtendsResult.False
+    if (TypeGuard.TOptional(left) && !TypeGuard.TOptional(right)) return TypeExtendsResult.False
     return TypeExtendsResult.True
   }
-
-  function Object(left: Types.TObject, right: Types.TAnySchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right)) {
-      return Properties(PropertyMap(left), PropertyMap(right))
-    } else if (TypeGuard.TRecord(right)) {
-      if (!RecordNumberOrStringKey(right as Types.TRecord)) {
-        return Properties(PropertyMap(left), PropertyMap(right))
-      } else {
-        return TypeExtendsResult.True
-      }
-    } else {
-      return TypeExtendsResult.False
-    }
-  }
-
-  function Promise(left: Types.TPromise, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right)) {
-      if (ObjectRightRule(left, right) || globalThis.Object.keys(right.properties).length === 0) {
-        return TypeExtendsResult.True
-      } else {
-        return TypeExtendsResult.False
-      }
-    } else if (!TypeGuard.TPromise(right)) {
-      return TypeExtendsResult.False
-    } else {
-      const result = Visit(left.item, right.item) !== TypeExtendsResult.False
-      return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    }
-  }
-
-  function Record(left: Types.TRecord, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right)) {
-      if (RecordPattern(left) === '^.*$' && right[Types.Hint] === 'Record') {
-        return TypeExtendsResult.True
-      } else if (RecordPattern(left) === '^.*$') {
-        return TypeExtendsResult.False
-      } else {
-        return globalThis.Object.keys(right.properties).length === 0 ? TypeExtendsResult.True : TypeExtendsResult.False
-      }
-    } else if (TypeGuard.TRecord(right)) {
-      if (!RecordNumberOrStringKey(left as Types.TRecord) && !RecordNumberOrStringKey(right as Types.TRecord)) {
-        return Properties(PropertyMap(left), PropertyMap(right))
-      } else if (RecordNumberOrStringKey(left as Types.TRecord) && !RecordNumberOrStringKey(right as Types.TRecord)) {
-        const leftKey = RecordKey(left as Types.TRecord)
-        const rightKey = RecordKey(right as Types.TRecord)
-        if (Visit(rightKey, leftKey) === TypeExtendsResult.False) {
+  function Object(left: Types.TObject, right: Types.TSchema) {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TRecord(right)) {
+      const keyschema = GetRecordKey(right)
+      const valueschema = GetRecordValue(right)
+      // note: if not string, then we assume right record to be an empty set.
+      if (!TypeGuard.TString(keyschema)) return TypeExtendsResult.True
+      for (const key of globalThis.Object.keys(left.properties)) {
+        if (Property(left.properties[key], valueschema) === TypeExtendsResult.False) {
           return TypeExtendsResult.False
-        } else {
-          return TypeExtendsResult.True
         }
-      } else {
-        return TypeExtendsResult.True
       }
-    } else {
-      return TypeExtendsResult.False
+      return TypeExtendsResult.True
     }
-  }
-
-  function Ref(left: Types.TRef, right: Types.TSchema): TypeExtendsResult {
-    if (!referenceMap.has(left.$ref)) throw Error(`Cannot locate referenced $id '${left.$ref}'`)
-    const resolved = referenceMap.get(left.$ref)!
-    return Visit(resolved, right)
-  }
-
-  function Self(left: Types.TSelf, right: Types.TSchema): TypeExtendsResult {
-    if (!referenceMap.has(left.$ref)) throw Error(`Cannot locate referenced self $id '${left.$ref}'`)
-    const resolved = referenceMap.get(left.$ref)!
-    return Visit(resolved, right)
-  }
-
-  function String(left: Types.TString, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TRecord(right)) {
-      return Indexable(left, RecordValue(right))
-    } else if (TypeGuard.TString(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TUnion(right)) {
-      return UnionRightRule(left, right)
-    } else {
-      return TypeExtendsResult.False
-    }
-  }
-
-  function Tuple(left: Types.TTuple, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right)) {
-      const result = ObjectRightRule(left, right) || globalThis.Object.keys(right.properties).length === 0
-      return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    } else if (TypeGuard.TRecord(right)) {
-      return Indexable(left, RecordValue(right))
-    } else if (TypeGuard.TArray(right)) {
-      if (right.items === undefined) {
-        return TypeExtendsResult.False
-      } else if (TypeGuard.TUnion(right.items) && left.items) {
-        const result = left.items.every((left: Types.TSchema) => UnionRightRule(left, right.items as Types.TUnion) !== TypeExtendsResult.False)
-        return result ? TypeExtendsResult.True : TypeExtendsResult.False
-      } else if (TypeGuard.TAny(right.items)) {
-        return TypeExtendsResult.True
-      } else {
+    if (!TypeGuard.TObject(right)) return TypeExtendsResult.False
+    for (const key of globalThis.Object.keys(right.properties)) {
+      if (!(key in left.properties)) continue
+      if (Property(left.properties[key], right.properties[key]) === TypeExtendsResult.False) {
         return TypeExtendsResult.False
       }
-    }
-    if (!TypeGuard.TTuple(right)) return TypeExtendsResult.False
-    if (left.items === undefined && right.items === undefined) return TypeExtendsResult.True
-    if (left.items === undefined && right.items !== undefined) return TypeExtendsResult.False
-    if (left.items !== undefined && right.items === undefined) return TypeExtendsResult.False
-    if (left.items === undefined && right.items === undefined) return TypeExtendsResult.True
-    if (left.minItems !== right.minItems || left.maxItems !== right.maxItems) return TypeExtendsResult.False
-    for (let i = 0; i < left.items!.length; i++) {
-      if (Visit(left.items![i], right.items![i]) === TypeExtendsResult.False) return TypeExtendsResult.False
     }
     return TypeExtendsResult.True
   }
-
-  function Uint8Array(left: Types.TUint8Array, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
+  // ------------------------------------------------------------------------------------------
+  // Record
+  // ------------------------------------------------------------------------------------------
+  function GetRecordKey(schema: Types.TRecord) {
+    if ('^(0|[1-9][0-9]*)$' in schema.patternProperties) return { [Types.Kind]: 'Number', type: 'number' }
+    if ('^.*$' in schema.patternProperties) return { [Types.Kind]: 'String', type: 'string' }
+    throw Error('TypeExtends: Cannot get record value')
+  }
+  function GetRecordValue(schema: Types.TRecord) {
+    if ('^(0|[1-9][0-9]*)$' in schema.patternProperties) return schema.patternProperties['^(0|[1-9][0-9]*)$']
+    if ('^.*$' in schema.patternProperties) return schema.patternProperties['^.*$']
+    throw Error('TypeExtends: Cannot get record value')
+  }
+  function Record(left: Types.TRecord, right: Types.TSchema) {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right)) {
+      const valueschema = GetRecordValue(left)
+      for (const key of globalThis.Object.keys(right.properties)) {
+        if (Property(valueschema, right.properties[key]) === TypeExtendsResult.False) {
+          return TypeExtendsResult.False
+        }
+      }
       return TypeExtendsResult.True
-    } else if (TypeGuard.TObject(right) && ObjectRightRule(left, right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TRecord(right)) {
-      return Indexable(left, RecordValue(right as Types.TRecord))
-    } else if (TypeGuard.TUint8Array(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TUnion(right)) {
-      return UnionRightRule(left, right)
-    } else {
+    }
+    if (!TypeGuard.TRecord(right)) return TypeExtendsResult.False
+    return Visit(GetRecordValue(left), GetRecordValue(right))
+  }
+  // ------------------------------------------------------------------------------------------
+  // Array
+  // ------------------------------------------------------------------------------------------
+  function IsObjectArrayLike(object: Types.TObject) {
+    return globalThis.Object.keys(object.properties).length === 0 || (object.properties.length !== undefined && TypeGuard.TNumber(object.properties['length']))
+  }
+  function Array(left: Types.TArray, right: Types.TSchema) {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectArrayLike(right)) return TypeExtendsResult.True
+    if (!TypeGuard.TArray(right)) return TypeExtendsResult.False
+    return Visit(left.items, right.items)
+  }
+  // ------------------------------------------------------------------------------------------
+  // Tuple
+  // ------------------------------------------------------------------------------------------
+  function IsTupleArrayRight(left: Types.TTuple, right: Types.TSchema) {
+    return TypeGuard.TArray(right) && left.items !== undefined && left.items.every((schema) => Visit(schema, right.items) === TypeExtendsResult.True)
+  }
+  function Tuple(left: Types.TTuple, right: Types.TSchema): TypeExtendsResult {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectArrayLike(right)) return TypeExtendsResult.True
+    if (TypeGuard.TArray(right) && IsTupleArrayRight(left, right)) return TypeExtendsResult.True
+    if (!TypeGuard.TTuple(right)) return TypeExtendsResult.False
+    if ((left.items === undefined && right.items !== undefined) || (left.items !== undefined && right.items === undefined)) return TypeExtendsResult.False
+    if (left.items === undefined && right.items === undefined) return TypeExtendsResult.True
+    return left.items!.every((schema, index) => Visit(schema, right.items![index]) === TypeExtendsResult.True) ? TypeExtendsResult.True : TypeExtendsResult.False
+  }
+  // ------------------------------------------------------------------------------------------
+  // Promise
+  // ------------------------------------------------------------------------------------------
+  function Promise(left: Types.TPromise, right: Types.TSchema) {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (!TypeGuard.TPromise(right)) return TypeExtendsResult.False
+    return Visit(left.item, right.item)
+  }
+  // ------------------------------------------------------------------------------------------
+  // Date
+  // ------------------------------------------------------------------------------------------
+  function Date(left: Types.TDate, right: Types.TSchema) {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (!TypeGuard.TDate(right)) return TypeExtendsResult.False
+    return TypeExtendsResult.True
+  }
+  // ------------------------------------------------------------------------------------------
+  // Uint8Array
+  // ------------------------------------------------------------------------------------------
+  function Uint8Array(left: Types.TUint8Array, right: Types.TSchema) {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (!TypeGuard.TUint8Array(right)) return TypeExtendsResult.False
+    return TypeExtendsResult.True
+  }
+  // ------------------------------------------------------------------------------------------
+  // Function
+  // ------------------------------------------------------------------------------------------
+  function Function(left: Types.TFunction, right: Types.TSchema) {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (!TypeGuard.TFunction(right)) return TypeExtendsResult.False
+    if (left.parameters.length > right.parameters.length) return TypeExtendsResult.False
+    if (!left.parameters.every((schema, index) => Visit(left.parameters[index], schema) === TypeExtendsResult.True)) {
       return TypeExtendsResult.False
     }
+    return Visit(left.returns, right.returns)
   }
-
-  function Undefined(left: Types.TUndefined, right: Types.TSchema): TypeExtendsResult {
-    if (AnyUnknownOrCustomRule(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TUndefined(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TVoid(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TUnion(right)) {
-      return UnionRightRule(left, right)
-    } else {
+  // ------------------------------------------------------------------------------------------
+  // Constructor
+  // ------------------------------------------------------------------------------------------
+  function Constructor(left: Types.TConstructor, right: Types.TSchema) {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (!TypeGuard.TConstructor(right)) return TypeExtendsResult.False
+    if (left.parameters.length > right.parameters.length) return TypeExtendsResult.False
+    if (!left.parameters.every((schema, index) => Visit(left.parameters[index], schema) === TypeExtendsResult.True)) {
       return TypeExtendsResult.False
     }
+    return Visit(left.returns, right.returns)
   }
-
-  function Union(left: Types.TUnion, right: Types.TSchema): TypeExtendsResult {
-    if (left.anyOf.some((left: Types.TSchema) => TypeGuard.TAny(left))) {
-      return TypeExtendsResult.Union
-    }
-    // else if (TypeGuard.TUnion(right)) {
-    //   const result = left.anyOf.every((left: Types.TSchema) => right.anyOf.some((right: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False))
-    //   return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    // } else if (TypeGuard.TIntersect(right)) {
-    //   const result = left.anyOf.every((left: Types.TSchema) => right.anyOf.some((right: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False))
-    //   return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    // }
-    else if (TypeGuard.TIntersect(right)) {
-      const result = right.allOf.every((rightSchema: Types.TSchema) => Visit(left, rightSchema) !== TypeExtendsResult.False)
-      return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    } else if (TypeGuard.TUnion(right)) {
-      const result = right.anyOf.some((rightSchema: Types.TSchema) => Visit(left, rightSchema) !== TypeExtendsResult.False)
-      return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    } else {
-      const result = left.anyOf.every((left: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False)
-      return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    }
+  function Visit(left: Types.TSchema, right: Types.TSchema): TypeExtendsResult {
+    const resolvedRight = right
+    if (TypeGuard.TIntersect(left)) return Intersect(left, resolvedRight)
+    if (TypeGuard.TUnion(left)) return Union(left, resolvedRight)
+    if (TypeGuard.TAny(left)) return Any(left, resolvedRight)
+    if (TypeGuard.TPrimitive(left)) return Primitive(left, right)
+    if (TypeGuard.TLiteral(left)) return Literal(left, resolvedRight)
+    if (TypeGuard.TObject(left)) return Object(left, resolvedRight)
+    if (TypeGuard.TArray(left)) return Array(left, resolvedRight)
+    if (TypeGuard.TTuple(left)) return Tuple(left, resolvedRight)
+    if (TypeGuard.TPromise(left)) return Promise(left, resolvedRight)
+    if (TypeGuard.TDate(left)) return Date(left, resolvedRight)
+    if (TypeGuard.TUint8Array(left)) return Uint8Array(left, resolvedRight)
+    if (TypeGuard.TFunction(left)) return Function(left, resolvedRight)
+    if (TypeGuard.TConstructor(left)) return Constructor(left, resolvedRight)
+    if (TypeGuard.TRecord(left)) return Record(left, resolvedRight)
+    if (TypeGuard.TUserDefined(left)) throw Error(`TypeExtends: Cannot structurally compare custom type '${left[Types.Kind]}'`)
+    throw Error(`TypeExtends: Unknown left operand '${left[Types.Kind]}'`)
   }
-
-  function Unknown(left: Types.TUnknown, right: Types.TSchema): TypeExtendsResult {
-    if (TypeGuard.TUnion(right)) {
-      const result = right.anyOf.some((right: Types.TSchema) => TypeGuard.TAny(right) || TypeGuard.TUnknown(right))
-      return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    } else if (TypeGuard.TAny(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TUnknown(right)) {
-      return TypeExtendsResult.True
-    } else {
-      return TypeExtendsResult.False
-    }
-  }
-
-  function Void(left: Types.TVoid, right: Types.TSchema): TypeExtendsResult {
-    if (TypeGuard.TUnion(right)) {
-      const result = right.anyOf.some((right: Types.TSchema) => TypeGuard.TAny(right) || TypeGuard.TUnknown(right))
-      return result ? TypeExtendsResult.True : TypeExtendsResult.False
-    } else if (TypeGuard.TAny(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TUnknown(right)) {
-      return TypeExtendsResult.True
-    } else if (TypeGuard.TVoid(right)) {
-      return TypeExtendsResult.True
-    } else {
-      return TypeExtendsResult.False
-    }
-  }
-
-  let recursionDepth = 0
-  function Visit<Left extends Types.TAnySchema, Right extends Types.TAnySchema>(left: Left, right: Types.TSchema): TypeExtendsResult {
-    recursionDepth += 1
-    if (recursionDepth >= 1000) return TypeExtendsResult.True
-    if (left.$id !== undefined) referenceMap.set(left.$id!, left)
-    if (right.$id !== undefined) referenceMap.set(right.$id!, right)
-    const resolvedRight = right[Types.Kind] === 'Self' ? referenceMap.get(right.$ref)! : right
-    if (TypeGuard.TAny(left)) {
-      return Any(left, resolvedRight)
-    } else if (TypeGuard.TArray(left)) {
-      return Array(left, resolvedRight)
-    } else if (TypeGuard.TBoolean(left)) {
-      return Boolean(left, resolvedRight)
-    } else if (TypeGuard.TConstructor(left)) {
-      return Constructor(left, resolvedRight)
-    } else if (TypeGuard.TDate(left)) {
-      return Date(left, resolvedRight)
-    } else if (TypeGuard.TFunction(left)) {
-      return Function(left, resolvedRight)
-    } else if (TypeGuard.TInteger(left)) {
-      return Integer(left, resolvedRight)
-    } else if (TypeGuard.TIntersect(left)) {
-      return Intersect(left, resolvedRight)
-    } else if (TypeGuard.TLiteral(left)) {
-      return Literal(left, resolvedRight)
-    } else if (TypeGuard.TNull(left)) {
-      return Null(left, resolvedRight)
-    } else if (TypeGuard.TNumber(left)) {
-      return Number(left, resolvedRight)
-    } else if (TypeGuard.TObject(left)) {
-      return Object(left, resolvedRight)
-    } else if (TypeGuard.TPromise(left)) {
-      return Promise(left, resolvedRight)
-    } else if (TypeGuard.TRecord(left)) {
-      return Record(left, resolvedRight)
-    } else if (TypeGuard.TRef(left)) {
-      return Ref(left, resolvedRight)
-    } else if (TypeGuard.TSelf(left)) {
-      return Self(left, resolvedRight)
-    } else if (TypeGuard.TString(left)) {
-      return String(left, resolvedRight)
-    } else if (TypeGuard.TTuple(left)) {
-      return Tuple(left, resolvedRight)
-    } else if (TypeGuard.TUndefined(left)) {
-      return Undefined(left, resolvedRight)
-    } else if (TypeGuard.TUint8Array(left)) {
-      return Uint8Array(left, resolvedRight)
-    } else if (TypeGuard.TUnion(left)) {
-      return Union(left, resolvedRight)
-    } else if (TypeGuard.TUnknown(left)) {
-      return Unknown(left, resolvedRight)
-    } else if (TypeGuard.TVoid(left)) {
-      return Void(left, resolvedRight)
-    } else if (TypeGuard.TUserDefined(left)) {
-      throw Error(`Structural: Cannot structurally compare custom type '${left[Types.Kind]}'`)
-    } else {
-      throw Error(`Structural: Unknown left operand '${left[Types.Kind]}'`)
-    }
-  }
-
-  /** Structurally tests if the left schema extends the right. */
-  export function Check(left: Types.TSchema, right: Types.TSchema): TypeExtendsResult {
-    referenceMap.clear()
-    recursionDepth = 0
+  export function Extends(left: Types.TSchema, right: Types.TSchema): TypeExtendsResult {
     return Visit(left, right)
   }
 }
