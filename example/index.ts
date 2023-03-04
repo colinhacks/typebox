@@ -29,9 +29,8 @@ export namespace TypeExtends {
   // Primitive Sets
   // ------------------------------------------------------------------------------------------
   // prettier-ignore
-  const PrimitiveSets = new Map<string, Set<string>>([
+  const primitives = new Map<string, Set<string>>([
     ['Unknown',   new Set(['Any', 'Unknown'])],
-    ['Literal',   new Set(['Any', 'Unknown', 'String', 'Number', 'Boolean'])],
     ['String',    new Set(['Any', 'Unknown', 'String'])],
     ['Boolean',   new Set(['Any', 'Unknown', 'Boolean'])],
     ['Number',    new Set(['Any', 'Unknown', 'Integer', 'Number'])],
@@ -51,7 +50,6 @@ export namespace TypeExtends {
   function Intersect(left: Types.TIntersect, right: Types.TSchema) {
     return left.allOf.some((schema) => Visit(schema, right) === TypeExtendsResult.True) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
-
   // ------------------------------------------------------------------------------------------
   // Union
   // ------------------------------------------------------------------------------------------
@@ -87,7 +85,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
 
-    if (TypeGuard.TPrimitive(right)) return PrimitiveSets.get(left[Types.Kind])!.has(right[Types.Kind]) ? TypeExtendsResult.True : TypeExtendsResult.False
+    if (TypeGuard.TPrimitive(right)) return primitives.get(left[Types.Kind])!.has(right[Types.Kind]) ? TypeExtendsResult.True : TypeExtendsResult.False
     return TypeExtendsResult.False
   }
   // ------------------------------------------------------------------------------------------
@@ -192,6 +190,36 @@ export namespace TypeExtends {
     if (!TypeGuard.TUint8Array(right)) return TypeExtendsResult.False
     return TypeExtendsResult.True
   }
+  // ------------------------------------------------------------------------------------------
+  // Function
+  // ------------------------------------------------------------------------------------------
+  function Function(left: Types.TFunction, right: Types.TSchema) {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (!TypeGuard.TFunction(right)) return TypeExtendsResult.False
+    if (left.parameters.length > right.parameters.length) return TypeExtendsResult.False
+    if (!left.parameters.every((schema, index) => Visit(left.parameters[index], schema) === TypeExtendsResult.True)) {
+      return TypeExtendsResult.False
+    }
+    return Visit(left.returns, right.returns)
+  }
+  // ------------------------------------------------------------------------------------------
+  // Constructor
+  // ------------------------------------------------------------------------------------------
+  function Constructor(left: Types.TConstructor, right: Types.TSchema) {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (!TypeGuard.TConstructor(right)) return TypeExtendsResult.False
+    if (left.parameters.length > right.parameters.length) return TypeExtendsResult.False
+    if (!left.parameters.every((schema, index) => Visit(left.parameters[index], schema) === TypeExtendsResult.True)) {
+      return TypeExtendsResult.False
+    }
+    return Visit(left.returns, right.returns)
+  }
   function Visit(left: Types.TSchema, right: Types.TSchema): TypeExtendsResult {
     const resolvedRight = right
     if (TypeGuard.TIntersect(left)) return Intersect(left, resolvedRight)
@@ -205,18 +233,21 @@ export namespace TypeExtends {
     if (TypeGuard.TPromise(left)) return Promise(left, resolvedRight)
     if (TypeGuard.TDate(left)) return Date(left, resolvedRight)
     if (TypeGuard.TUint8Array(left)) return Uint8Array(left, resolvedRight)
+    if (TypeGuard.TFunction(left)) return Function(left, resolvedRight)
+    if (TypeGuard.TConstructor(left)) return Constructor(left, resolvedRight)
     if (TypeGuard.TUserDefined(left)) throw Error(`TypeExtends: Cannot structurally compare custom type '${left[Types.Kind]}'`)
     throw Error(`TypeExtends: Unknown left operand '${left[Types.Kind]}'`)
   }
-
   export function Extends(left: Types.TSchema, right: Types.TSchema): TypeExtendsResult {
     return Visit(left, right)
   }
 }
 
-type P = void extends undefined ? true : false
+type AAA = number extends any ? 1 : 2
 
-const R = TypeExtends.Extends(Type.Void(), Type.Undefined())
+type P = (new (a: number) => void) extends new (a: number) => any ? true : false
+
+const R = TypeExtends.Extends(Type.Constructor([Type.Number()], Type.Void()), Type.Constructor([Type.Number()], Type.Any()))
 
 console.log(TypeExtendsResult[R])
 
