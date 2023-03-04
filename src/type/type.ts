@@ -105,7 +105,6 @@ export interface TSchema extends SchemaOptions {
 
 // prettier-ignore
 export type TPrimitive = 
-  | TAny 
   | TUnknown
   | TString 
   | TBoolean 

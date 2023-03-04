@@ -470,8 +470,24 @@ export namespace TypeGuard {
     return IsObject(schema) && IsString(schema[Types.Kind]) && Custom.Has(schema[Types.Kind])
   }
 
+  /** Returns true if the given schema is a primitive type such as string, number, boolean, null, unknown, never */
   export function TPrimitive(schema: unknown): schema is Types.TPrimitive {
-    return TAny(schema) || TUnknown(schema) || TString(schema) || TBoolean(schema) || TNumber(schema) || TInteger(schema) || TNull(schema) || TUndefined(schema) || TNever(schema)
+    return TUnknown(schema) || TString(schema) || TBoolean(schema) || TNumber(schema) || TInteger(schema) || TNull(schema) || TUndefined(schema) || TNever(schema)
+  }
+
+  /** Returns true if this schema has the ReadonlyOptional modifier */
+  export function TReadonlyOptional<T extends Types.TSchema>(schema: T): schema is Types.TReadonlyOptional<T> {
+    return TSchema(schema) && schema[Types.Modifier] === 'ReadonlyOptional'
+  }
+
+  /** Returns true if this schema has the Readonly modifier */
+  export function TReadonly<T extends Types.TSchema>(schema: T): schema is Types.TReadonly<T> {
+    return TSchema(schema) && schema[Types.Modifier] === 'Readonly'
+  }
+
+  /** Returns true if this schema has the Optional modifier */
+  export function TOptional<T extends Types.TSchema>(schema: T): schema is Types.TOptional<T> {
+    return TSchema(schema) && schema[Types.Modifier] === 'Optional'
   }
 
   /** Returns true if the given schema is TSchema */
