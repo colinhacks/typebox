@@ -24,8 +24,6 @@ export enum TypeExtendsResult {
   False,
 }
 
-export type PrimitiveType = Types.TAny | Types.TUnknown | Types.TLiteral | Types.TString | Types.TBoolean | Types.TNumber | Types.TInteger | Types.TNull | Types.TUndefined | Types.TNever
-
 export namespace TypeExtends {
   // ------------------------------------------------------------------------------------------
   // Primitive Sets
@@ -44,35 +42,30 @@ export namespace TypeExtends {
     ['Undefined', new Set(['Any', 'Unknown', 'Undefined'])],
     ['Never', new Set(['Never'])],
   ])
-  function IsPrimitiveType(schema: Types.TSchema): schema is PrimitiveType {
-    return (
-      TypeGuard.TAny(schema) ||
-      TypeGuard.TUnknown(schema) ||
-      TypeGuard.TLiteral(schema) ||
-      TypeGuard.TString(schema) ||
-      TypeGuard.TBoolean(schema) ||
-      TypeGuard.TNumber(schema) ||
-      TypeGuard.TInteger(schema) ||
-      TypeGuard.TNull(schema) ||
-      TypeGuard.TUndefined(schema) ||
-      TypeGuard.TNever(schema)
-    )
+
+  function Literal(left: Types.TLiteral, right: TSchema): TypeExtendsResult {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TLiteral(right) && right.const === left.const) return TypeExtendsResult.True
+    if (typeof left.const === 'string' && TypeGuard.TString(right)) return TypeExtendsResult.True
+    if (typeof left.const === 'number' && TypeGuard.TNumber(right)) return TypeExtendsResult.True
+    if (typeof left.const === 'boolean' && TypeGuard.TBoolean(right)) return TypeExtendsResult.True
+    return TypeExtendsResult.False
   }
-  function ExtendsLiteralType(left: Types.TLiteral, right: PrimitiveType): TypeExtendsResult {
-    if (typeof left.const === 'string' && TypeGuard.TString(right)) {
-      return TypeExtendsResult.True
-    } else if (typeof left.const === 'number' && TypeGuard.TNumber(right)) {
-      return TypeExtendsResult.True
-    } else if (typeof left.const === 'boolean' && TypeGuard.TBoolean(right)) {
-      return TypeExtendsResult.True
-    } else {
-      return TypeExtendsResult.False
-    }
+  function Primitive(left: Types.TPrimitive, right: TSchema): TypeExtendsResult {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TPrimitive(right)) return PrimitiveSets.get(left[Types.Kind])!.has(right[Types.Kind]) ? TypeExtendsResult.True : TypeExtendsResult.False
+    return TypeExtendsResult.False
   }
-  function ExtendsPrimitiveType(left: PrimitiveType, right: PrimitiveType): TypeExtendsResult {
-    if (TypeGuard.TLiteral(left)) return ExtendsLiteralType(left, right)
-    return PrimitiveSets.get(left[Types.Kind])!.has(right[Types.Kind]) ? TypeExtendsResult.True : TypeExtendsResult.False
+
+  function IntersectRight(left: Types.TSchema, right: Types.TIntersect): TypeExtendsResult {
+    return right.allOf.every((schema) => Visit(left, schema) === TypeExtendsResult.True) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
+  function UnionRight(left: Types.TSchema, right: Types.TUnion): TypeExtendsResult {
+    return right.anyOf.some((schema) => Visit(left, schema) === TypeExtendsResult.True) ? TypeExtendsResult.True : TypeExtendsResult.False
+  }
+
   // ------------------------------------------------------------------------------------------
   // Composite
   // ------------------------------------------------------------------------------------------
@@ -101,94 +94,32 @@ export namespace TypeExtends {
       : TypeExtendsResult.True
   }
 
-  export function Unknown(left: Types.TUnknown, right: Types.TSchema) {
-    return IsPrimitiveType(right) ? ExtendsPrimitiveType(left, right) : TypeExtendsResult.False
-  }
-  export function Literal(left: Types.TLiteral, right: Types.TSchema) {
-    return IsPrimitiveType(right) ? ExtendsPrimitiveType(left, right) : TypeExtendsResult.False
-  }
-  export function String(left: Types.TString, right: Types.TSchema) {
-    return IsPrimitiveType(right) ? ExtendsPrimitiveType(left, right) : TypeExtendsResult.False
-  }
-  export function Boolean(left: Types.TBoolean, right: Types.TSchema) {
-    return IsPrimitiveType(right) ? ExtendsPrimitiveType(left, right) : TypeExtendsResult.False
-  }
-  export function Number(left: Types.TNumber, right: Types.TSchema) {
-    return IsPrimitiveType(right) ? ExtendsPrimitiveType(left, right) : TypeExtendsResult.False
-  }
-  export function Integer(left: Types.TInteger, right: Types.TSchema) {
-    return IsPrimitiveType(right) ? ExtendsPrimitiveType(left, right) : TypeExtendsResult.False
-  }
-  export function Null(left: Types.TNull, right: Types.TSchema) {
-    return IsPrimitiveType(right) ? ExtendsPrimitiveType(left, right) : TypeExtendsResult.False
-  }
-  export function Undefined(left: Types.TUndefined, right: Types.TSchema) {
-    return IsPrimitiveType(right) ? ExtendsPrimitiveType(left, right) : TypeExtendsResult.False
-  }
-  export function Never(left: Types.TNever, right: Types.TSchema) {
-    return IsPrimitiveType(right) ? ExtendsPrimitiveType(left, right) : TypeExtendsResult.False
-  }
   // ------------------------------------------------------------------------------------------
   // Complex
   // ------------------------------------------------------------------------------------------
-  export function Object(left: Types.TObject, right: Types.TSchema) {
-    if (TypeGuard.TIntersect(right)) {
-      return right.allOf.every((schema) => Visit(left, schema) === TypeExtendsResult.True) ? TypeExtendsResult.True : TypeExtendsResult.False
-    } else if (TypeGuard.TUnion(right)) {
-      return right.anyOf.some((schema) => Visit(left, schema) === TypeExtendsResult.True) ? TypeExtendsResult.True : TypeExtendsResult.False
-    } else if (TypeGuard.TObject(right)) {
-      for (const key of globalThis.Object.keys(right.properties)) {
-        if (!(key in left.properties)) return TypeExtendsResult.False
-        const result = Visit(left.properties[key], right.properties[key])
-        if (result === TypeExtendsResult.False) return TypeExtendsResult.False
+  function Object(left: Types.TObject, right: Types.TSchema) {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (!TypeGuard.TObject(right)) return TypeExtendsResult.False
+    for (const key of globalThis.Object.keys(right.properties)) {
+      if (!(key in left.properties)) continue
+      if (Visit(left.properties[key], right.properties[key]) === TypeExtendsResult.False) {
+        return TypeExtendsResult.False
       }
-      return TypeExtendsResult.True
-    } else {
-      return TypeExtendsResult.False
     }
+    return TypeExtendsResult.True
   }
+
   function Visit(left: Types.TSchema, right: Types.TSchema): TypeExtendsResult {
     const resolvedRight = right
-    // ------------------------------------------------------------------------------------------
-    // Composite
-    // ------------------------------------------------------------------------------------------
-    if (TypeGuard.TIntersect(left)) {
-      return Intersect(left, resolvedRight)
-    } else if (TypeGuard.TUnion(left)) {
-      return Union(left, resolvedRight)
-    }
-    // ------------------------------------------------------------------------------------------
-    // Primitives
-    // ------------------------------------------------------------------------------------------
-    else if (TypeGuard.TAny(left)) {
-      return Any(left, resolvedRight)
-    } else if (TypeGuard.TBoolean(left)) {
-      return Boolean(left, resolvedRight)
-    } else if (TypeGuard.TInteger(left)) {
-      return Integer(left, resolvedRight)
-    } else if (TypeGuard.TLiteral(left)) {
-      return Literal(left, resolvedRight)
-    } else if (TypeGuard.TNull(left)) {
-      return Null(left, resolvedRight)
-    } else if (TypeGuard.TNumber(left)) {
-      return Number(left, resolvedRight)
-    } else if (TypeGuard.TString(left)) {
-      return String(left, resolvedRight)
-    } else if (TypeGuard.TUndefined(left)) {
-      return Undefined(left, resolvedRight)
-    } else if (TypeGuard.TUnknown(left)) {
-      return Unknown(left, resolvedRight)
-    } else if (TypeGuard.TObject(left)) {
-      return Object(left, resolvedRight)
-    }
-    // -----------------------------------------------------
-    // Non Resolvable
-    // -----------------------------------------------------
-    else if (TypeGuard.TUserDefined(left)) {
-      throw Error(`Structural: Cannot structurally compare custom type '${left[Types.Kind]}'`)
-    } else {
-      throw Error(`Structural: Unknown left operand '${left[Types.Kind]}'`)
-    }
+    if (TypeGuard.TIntersect(left)) return Intersect(left, resolvedRight)
+    if (TypeGuard.TUnion(left)) return Union(left, resolvedRight)
+    if (TypeGuard.TAny(left)) return Any(left, resolvedRight)
+    if (TypeGuard.TPrimitive(left)) return Primitive(left, right)
+    if (TypeGuard.TLiteral(left)) return Literal(left, resolvedRight)
+    if (TypeGuard.TObject(left)) return Object(left, resolvedRight)
+    if (TypeGuard.TUserDefined(left)) throw Error(`Structural: Cannot structurally compare custom type '${left[Types.Kind]}'`)
+    throw Error(`Structural: Unknown left operand '${left[Types.Kind]}'`)
   }
 
   export function Extends(left: Types.TSchema, right: Types.TSchema): TypeExtendsResult {
@@ -197,20 +128,20 @@ export namespace TypeExtends {
 }
 
 const R = TypeExtends.Extends(
-  Type.Object({
-    a: Type.Number(),
-    b: Type.Number(),
-  }),
-  Type.Intersect([
-    Type.Object({
-      a: Type.Number(),
-    }),
-    Type.Object({
-      b: Type.Union([Type.String(), Type.Number()]),
-    }),
+  Type.Union([
+    Type.String(),
+    Type.Number(),
+  ]),
+  Type.Union([
+    Type.String(),
+    Type.Number(),
   ]),
 )
 
+// const R = TypeExtends.Extends(Type.Number(), Type.Union([Type.Number(), Type.String()]))
+
+type P = string | number extends string  ? true : false
+
 console.log(TypeExtendsResult[R])
 
-type S = { a: number; b: number } extends { a: number } & { b: string | number } ? true : false
+type S = { a: number } extends { a: number } ? true : false

@@ -103,6 +103,18 @@ export interface TSchema extends SchemaOptions {
   static: unknown
 }
 
+// prettier-ignore
+export type TPrimitive = 
+  | TAny 
+  | TUnknown
+  | TString 
+  | TBoolean 
+  | TNumber 
+  | TInteger 
+  | TNull 
+  | TUndefined 
+  | TNever
+
 // --------------------------------------------------------------------------
 // TAnySchema
 // --------------------------------------------------------------------------

@@ -470,6 +470,10 @@ export namespace TypeGuard {
     return IsObject(schema) && IsString(schema[Types.Kind]) && Custom.Has(schema[Types.Kind])
   }
 
+  export function TPrimitive(schema: unknown): schema is Types.TPrimitive {
+    return TAny(schema) || TUnknown(schema) || TString(schema) || TBoolean(schema) || TNumber(schema) || TInteger(schema) || TNull(schema) || TUndefined(schema) || TNever(schema)
+  }
+
   /** Returns true if the given schema is TSchema */
   export function TSchema(schema: unknown): schema is Types.TSchema {
     return (
