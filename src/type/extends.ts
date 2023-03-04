@@ -250,6 +250,21 @@ export namespace TypeExtends {
     }
   }
 
+  function Intersect(left: Types.TIntersect, right: Types.TSchema): TypeExtendsResult {
+    if (AnyUnknownOrCustomRule(right)) {
+      return TypeExtendsResult.True
+    } else if (TypeGuard.TIntersect(right)) {
+      const result = right.allOf.every((rightSchema: Types.TSchema) => Visit(left, rightSchema) !== TypeExtendsResult.False)
+      return result ? TypeExtendsResult.True : TypeExtendsResult.False
+    } else if (TypeGuard.TUnion(right)) {
+      const result = right.anyOf.some((rightSchema: Types.TSchema) => Visit(left, rightSchema) !== TypeExtendsResult.False)
+      return result ? TypeExtendsResult.True : TypeExtendsResult.False
+    } else {
+      const result = left.allOf.some((left: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False)
+      return result ? TypeExtendsResult.True : TypeExtendsResult.False
+    }
+  }
+
   function Literal(left: Types.TLiteral, right: Types.TSchema): TypeExtendsResult {
     if (AnyUnknownOrCustomRule(right)) {
       return TypeExtendsResult.True
@@ -475,8 +490,19 @@ export namespace TypeExtends {
   function Union(left: Types.TUnion, right: Types.TSchema): TypeExtendsResult {
     if (left.anyOf.some((left: Types.TSchema) => TypeGuard.TAny(left))) {
       return TypeExtendsResult.Union
+    }
+    // else if (TypeGuard.TUnion(right)) {
+    //   const result = left.anyOf.every((left: Types.TSchema) => right.anyOf.some((right: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False))
+    //   return result ? TypeExtendsResult.True : TypeExtendsResult.False
+    // } else if (TypeGuard.TIntersect(right)) {
+    //   const result = left.anyOf.every((left: Types.TSchema) => right.anyOf.some((right: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False))
+    //   return result ? TypeExtendsResult.True : TypeExtendsResult.False
+    // }
+    else if (TypeGuard.TIntersect(right)) {
+      const result = right.allOf.every((rightSchema: Types.TSchema) => Visit(left, rightSchema) !== TypeExtendsResult.False)
+      return result ? TypeExtendsResult.True : TypeExtendsResult.False
     } else if (TypeGuard.TUnion(right)) {
-      const result = left.anyOf.every((left: Types.TSchema) => right.anyOf.some((right: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False))
+      const result = right.anyOf.some((rightSchema: Types.TSchema) => Visit(left, rightSchema) !== TypeExtendsResult.False)
       return result ? TypeExtendsResult.True : TypeExtendsResult.False
     } else {
       const result = left.anyOf.every((left: Types.TSchema) => Visit(left, right) !== TypeExtendsResult.False)
@@ -533,6 +559,8 @@ export namespace TypeExtends {
       return Function(left, resolvedRight)
     } else if (TypeGuard.TInteger(left)) {
       return Integer(left, resolvedRight)
+    } else if (TypeGuard.TIntersect(left)) {
+      return Intersect(left, resolvedRight)
     } else if (TypeGuard.TLiteral(left)) {
       return Literal(left, resolvedRight)
     } else if (TypeGuard.TNull(left)) {

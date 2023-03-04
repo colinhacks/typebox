@@ -26,90 +26,42 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
+import { ValueClone } from '../value/clone'
+import { TypeExtends, TypeExtendsResult } from './extends'
+import { TypeGuard } from './guard'
 import * as Types from './type'
 
-// // normalization constraints
-// export type NormalizeNormalizable<T extends Normalizable, N = Normalize<T>> = N extends TObject ? TObject<{
-//     [K in keyof N['properties']]: Normalize<N['properties'][K]>
-//   }> : TObject<{}>
+export namespace TypeNormal {
+  function NormalizeProperty(current: Types.TSchema, next: Types.TSchema): Types.TSchema {
+    if (TypeGuard.TNever(current)) return current
+    return TypeExtends.Check(next, current) === TypeExtendsResult.True ? Types.Type.Intersect([next, current]) : Types.Type.Never()
+  }
+  function NormalizeProperties(current: Types.TProperties, next: Types.TProperties) {
+    const properties = ValueClone.Clone(current)
+    for (const key of globalThis.Object.keys(next)) {
+      properties[key] = key in properties ? NormalizeProperty(current[key], next[key]) : NormalizeProperty(Types.Type.Any(), next[key])
+    }
+    return properties
+  }
+  function Intersect<T extends Types.TIntersect>(schema: T) {
+    const properties = schema.allOf.reduce((acc, schema) => {
+      const normal = Normal(schema) as Types.TObject
+      return NormalizeProperties(acc, normal.properties)
+    }, {} as Types.TProperties)
+    return Types.Type.Object(properties)
+  }
 
-//   export type NormalizeNormalizableTuple<T extends Normalizable[]> = {
-//     [K in keyof T]: NormalizeNormalizable<T[K]>
-//   } extends infer R ? R extends TObject[] ? R : [] : []
+  function Union<T extends Types.TUnion>(schema: T) {
+    return schema as any
+  }
 
-// export type ObjectTupleToPropertyTuple<T> = T extends TObject[] ? { [K in keyof T]: T[K] extends TObject ? T[K]['properties'] : never } : never
-
-//   // prettier-ignore
-//   export type NormalizeIntersect<T extends Normalizable[]> = Types.TObject< // T is Normalizable[]
-//     Types.AssertProperties<
-//       Types.TupleToIntersect<
-//         ObjectTupleToPropertyTuple<
-//           NormalizeNormalizableTuple<T>
-//         >
-//       >
-//     >
-//   >
-//   // prettier-ignore
-//   export type NormalizeUnion<T extends Normalizable[]> = Types.TObject<
-//     Types.AssertProperties<
-//       Types.TupleToUnion<
-//         ObjectTupleToPropertyTuple<
-//           NormalizeNormalizableTuple<T>
-//         >
-//       >
-//     >
-//   >
-
-//   export type Normalizable = TObject | TIntersect<any[]> | TUnion<any[]>
-
-//   // prettier-ignore
-//   export type NormalizableKeys<T extends Types.TSchema> = keyof Types.Normalize<T>['properties']
-
-export type Normalized<T extends Types.TSchema> = T extends Types.TIntersect ? T : T extends Types.TUnion ? T : T
-
-export namespace Normal {
-  //   // ---------------------------------------------------------------------------
-  //   // Normalization
-  //   // ---------------------------------------------------------------------------
-
-  //   /** `Standard` Returns the normalized representation of this schema. */
-  //   public Normalize<T extends TSchema>(schema: T): Normalize<T> {
-  //     const isNormalizable = (schema: Record<any, any>): schema is Normalizable               => isIntersect(schema) || isUnion(schema) || isObject(schema)
-  //     const isIntersect    = (schema: Record<any, any>): schema is TIntersect<Normalizable[]> => Kind in schema && schema[Kind] === 'Intersect' && schema.allOf.every((schema: Record<any, any>) => isNormalizable(schema))
-  //     const isUnion        = (schema: Record<any, any>): schema is TUnion<Normalizable[]>     => Kind in schema && schema[Kind] === 'Union' && schema.anyOf.every((schema: Record<any, any>) => isNormalizable(schema))
-  //     const isObject       = (schema: Record<any, any>): schema is TObject                    => Kind in schema && schema[Kind] === 'Object'
-  //     if(!isNormalizable(schema)) throw Error('Schema cannot be normalized')
-  //     if (isIntersect(schema)) {
-  //       return this.NormalizeIntersect(schema)
-  //     } else if (isUnion(schema)) {
-  //       return this.NormalizeUnion(schema)
-  //     } else {
-  //       return this.Clone(schema)
-  //     }
-  //   }
-
-  //   private NormalizeProperties(current: TProperties, next: TProperties) {
-  //     const properties = this.Clone(current)
-  //     for(const key of globalThis.Object.keys(next)) {
-  //       properties[key] = (key in properties)
-  //         ? this.Intersect([this.Clone(next[key]), this.Clone(properties[key])])
-  //         : this.Clone(next[key])
-  //     }
-  //     return properties
-  //   }
-
-  //   private NormalizeIntersect<T extends TIntersect<TSchema[]>>(schema: T): Normalize<T> {
-  //     const properties = schema.allOf.reduce((acc, schema) => {
-  //       const normal = this.Normalize(schema) as TObject
-  //       return this.NormalizeProperties(acc, normal.properties)
-  //     }, {} as TProperties)
-  //     return this.Object(properties) as Normalize<T>
-  //   }
-
-  //   private NormalizeUnion<T extends TUnion>(schema: T): Normalize<T> {
-  //     return this.Object({}) as Normalize<T>
-  //   }
-  export function Normalize<T extends Types.TSchema>(schema: T): Normalized<T> {
-    throw 1
+  export function Normal<T extends Types.TSchema>(schema: T): Types.TSchema {
+    if (TypeGuard.TIntersect(schema)) {
+      return Intersect(schema)
+    } else if (TypeGuard.TUnion(schema)) {
+      return Union(schema)
+    } else {
+      return schema
+    }
   }
 }

@@ -29,7 +29,7 @@ THE SOFTWARE.
 import { ValueClone } from '../value/clone'
 import { TypeExtends, TypeExtendsResult } from './extends'
 import { TypeGuard } from './guard'
-import { Normal } from './normal'
+import { TypeNormal } from './normal'
 
 // --------------------------------------------------------------------------
 // Symbols
@@ -53,14 +53,19 @@ export type UnionToTuple<U, L = UnionLast<U>> = [U] extends [never] ? [] : [...U
 // Asserts
 // --------------------------------------------------------------------------
 export type Assert<T, E> = T extends E ? T : never
-export type AssertIntersect<T> = Assert<T, TIntersect>
-export type AssertUnion<T> = Assert<T, TUnion>
-export type AssertArray<T> = Assert<T, TArray>
-export type AssertObject<T> = Assert<T, TObject>
-export type AssertProperties<T> = Assert<T, TProperties>
-export type AssertString<T> = Assert<T, TString>
-export type AssertBoolean<T> = Assert<T, TBoolean>
-export type AssertNumber<T> = Assert<T, TNumber>
+export type AssertIntersect<T extends TSchema> = Assert<T, TIntersect>
+export type AssertUnion<T extends TSchema> = Assert<T, TUnion>
+export type AssertArray<T extends TSchema> = Assert<T, TArray>
+export type AssertObject<T extends TSchema> = Assert<T, TObject>
+export type AssertProperties<T extends TSchema> = Assert<T, TProperties>
+export type AssertString<T extends TSchema> = Assert<T, TString>
+export type AssertBoolean<T extends TSchema> = Assert<T, TBoolean>
+export type AssertNumber<T extends TSchema> = Assert<T, TNumber>
+export type AssertInteger<T extends TSchema> = Assert<T, TInteger>
+export type AssertNull<T extends TSchema> = Assert<T, TNull>
+export type AssertUndefined<T extends TSchema> = Assert<T, TUndefined>
+export type AssertDate<T extends TSchema> = Assert<T, TDate>
+export type AssertUint8Array<T extends TSchema> = Assert<T, TUint8Array>
 
 // --------------------------------------------------------------------------
 // Modifiers
@@ -814,6 +819,11 @@ export namespace Type {
         { type: 'boolean', const: true },
       ],
     })
+  }
+
+  /** `Standard` Returns the normalized representation of this type */
+  export function Normal<T extends TSchema>(schema: T) {
+    return TypeNormal.Normal(schema)
   }
 
   /** `Standard` Creates a not type */
