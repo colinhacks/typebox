@@ -27,7 +27,7 @@ THE SOFTWARE.
 ---------------------------------------------------------------------------*/
 
 import { TypeGuard } from './guard'
-import * as Types from '../typebox'
+import Type, * as Types from '../typebox'
 
 export enum TypeExtendsResult {
   Union,
@@ -50,7 +50,9 @@ export namespace TypeExtends {
     ['Void',      new Set(['Any', 'Unknown'])],
     ['Never',     new Set(['Never'])],
   ])
-
+  function BooleanExtendsResult(result: TypeExtendsResult) {
+    return result === TypeExtendsResult.False ? TypeExtendsResult.False : TypeExtendsResult.True
+  }
   // ------------------------------------------------------------------------------------------
   // Intersect
   // ------------------------------------------------------------------------------------------
@@ -73,18 +75,13 @@ export namespace TypeExtends {
   // Any
   // ------------------------------------------------------------------------------------------
   function Any(left: Types.TAny, right: Types.TSchema) {
-    return TypeGuard.TIntersect(right) ||
-      TypeGuard.TUnion(right) ||
-      TypeGuard.TNever(right) ||
-      TypeGuard.TObject(right) ||
-      TypeGuard.TArray(right) ||
-      TypeGuard.TTuple(right) ||
-      TypeGuard.TUint8Array(right) ||
-      TypeGuard.TDate(right) ||
-      TypeGuard.TFunction(right) ||
-      TypeGuard.TConstructor(right)
-      ? TypeExtendsResult.Union
-      : TypeExtendsResult.True
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    // note: if the right union contains an any, then left extends right
+    if (TypeGuard.TUnion(right) && right.anyOf.some((schema) => TypeGuard.TAny(schema))) return TypeExtendsResult.True
+    if (TypeGuard.TUnion(right)) return TypeExtendsResult.Union
+    if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
+    if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    return TypeExtendsResult.Union
   }
   // ------------------------------------------------------------------------------------------
   // Primitive
@@ -94,6 +91,9 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TString(left) && TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
+    if (TypeGuard.TNumber(left) && TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
+    if (TypeGuard.TBoolean(left) && TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
     if (!TypeGuard.TPrimitive(right)) return TypeExtendsResult.False
     return primitives.get(left[Types.Kind])!.has(right[Types.Kind]) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
@@ -105,6 +105,8 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
+
     if (TypeGuard.TLiteral(right) && right.const === left.const) return TypeExtendsResult.True
     if (typeof left.const === 'string' && TypeGuard.TString(right)) return TypeExtendsResult.True
     if (typeof left.const === 'number' && TypeGuard.TNumber(right)) return TypeExtendsResult.True
@@ -114,6 +116,9 @@ export namespace TypeExtends {
   // ------------------------------------------------------------------------------------------
   // Object
   // ------------------------------------------------------------------------------------------
+  function IsObjectEmpty(schema: Types.TObject) {
+    return globalThis.Object.keys(schema.properties).length === 0
+  }
   function Property(left: Types.TSchema, right: Types.TSchema) {
     if (Visit(left, right) === TypeExtendsResult.False) return TypeExtendsResult.False
     if (TypeGuard.TOptional(left) && !TypeGuard.TOptional(right)) return TypeExtendsResult.False
@@ -178,8 +183,8 @@ export namespace TypeExtends {
   // ------------------------------------------------------------------------------------------
   // Array
   // ------------------------------------------------------------------------------------------
-  function IsObjectArrayLike(object: Types.TObject) {
-    return globalThis.Object.keys(object.properties).length === 0 || (object.properties.length !== undefined && TypeGuard.TNumber(object.properties['length']))
+  function IsObjectArrayLike(schema: Types.TObject) {
+    return globalThis.Object.keys(schema.properties).length === 0 || TypeGuard.TNumber(schema.properties.length)
   }
   function Array(left: Types.TArray, right: Types.TSchema) {
     if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
@@ -188,8 +193,9 @@ export namespace TypeExtends {
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
     if (TypeGuard.TObject(right) && IsObjectArrayLike(right)) return TypeExtendsResult.True
     if (!TypeGuard.TArray(right)) return TypeExtendsResult.False
-    return Visit(left.items, right.items)
+    return BooleanExtendsResult(Visit(left.items, right.items))
   }
+
   // ------------------------------------------------------------------------------------------
   // Tuple
   // ------------------------------------------------------------------------------------------
@@ -201,7 +207,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
-    if (TypeGuard.TObject(right) && IsObjectArrayLike(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
     if (TypeGuard.TArray(right) && IsTupleArrayRight(left, right)) return TypeExtendsResult.True
     if (!TypeGuard.TTuple(right)) return TypeExtendsResult.False
     if ((left.items === undefined && right.items !== undefined) || (left.items !== undefined && right.items === undefined)) return TypeExtendsResult.False
@@ -216,6 +222,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
     if (!TypeGuard.TPromise(right)) return TypeExtendsResult.False
     return Visit(left.item, right.item)
   }
@@ -227,6 +234,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
     if (!TypeGuard.TDate(right)) return TypeExtendsResult.False
     return TypeExtendsResult.True
   }
@@ -238,6 +246,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
     if (!TypeGuard.TUint8Array(right)) return TypeExtendsResult.False
     return TypeExtendsResult.True
   }
@@ -249,6 +258,8 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
+
     if (!TypeGuard.TFunction(right)) return TypeExtendsResult.False
     if (left.parameters.length > right.parameters.length) return TypeExtendsResult.False
     if (!left.parameters.every((schema, index) => Visit(left.parameters[index], schema) === TypeExtendsResult.True)) {
@@ -264,6 +275,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
     if (!TypeGuard.TConstructor(right)) return TypeExtendsResult.False
     if (left.parameters.length > right.parameters.length) return TypeExtendsResult.False
     if (!left.parameters.every((schema, index) => Visit(left.parameters[index], schema) === TypeExtendsResult.True)) {
