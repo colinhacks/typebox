@@ -472,7 +472,7 @@ export namespace TypeGuard {
 
   /** Returns true if the given schema is a primitive type such as string, number, boolean, null, unknown, never */
   export function TPrimitive(schema: unknown): schema is Types.TPrimitive {
-    return TUnknown(schema) || TString(schema) || TBoolean(schema) || TNumber(schema) || TInteger(schema) || TNull(schema) || TUndefined(schema) || TNever(schema)
+    return TUnknown(schema) || TString(schema) || TBoolean(schema) || TNumber(schema) || TInteger(schema) || TNull(schema) || TUndefined(schema) || TVoid(schema) || TNever(schema)
   }
 
   /** Returns true if this schema has the ReadonlyOptional modifier */

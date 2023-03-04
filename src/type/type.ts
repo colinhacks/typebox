@@ -111,7 +111,8 @@ export type TPrimitive =
   | TNumber 
   | TInteger 
   | TNull 
-  | TUndefined 
+  | TUndefined
+  | TVoid
   | TNever
 
 // --------------------------------------------------------------------------

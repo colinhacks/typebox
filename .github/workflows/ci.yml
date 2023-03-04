@@ -1,8 +1,8 @@
-# name: GitHub CI
+name: GitHub CI
 
-# on: [push, pull_request]
+on: [push, pull_request]
 
-# jobs:
+jobs:
 #   TypeBox:
 #     runs-on: ${{ matrix.os }}
 #     strategy:
