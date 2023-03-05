@@ -27,7 +27,7 @@ THE SOFTWARE.
 ---------------------------------------------------------------------------*/
 
 import { TypeGuard } from './guard'
-import Type, * as Types from '../typebox'
+import * as Types from '../typebox'
 
 export enum TypeExtendsResult {
   Union,
@@ -50,8 +50,43 @@ export namespace TypeExtends {
     ['Void',      new Set(['Any', 'Unknown'])],
     ['Never',     new Set(['Never'])],
   ])
-  function BooleanExtendsResult(result: TypeExtendsResult) {
+  function IntoBooleanResult(result: TypeExtendsResult) {
     return result === TypeExtendsResult.False ? TypeExtendsResult.False : TypeExtendsResult.True
+  }
+  // ------------------------------------------------------------------------------------------
+  // ObjectLike
+  // ------------------------------------------------------------------------------------------
+  function IsObjectPropertyCount(schema: Types.TObject, count: number) {
+    return globalThis.Object.keys(schema.properties).length === count
+  }
+  function IsObjectStringLike(schema: Types.TObject) {
+    return IsObjectArrayLike(schema)
+  }
+  function IsObjectNumberLike(schema: Types.TObject) {
+    return IsObjectPropertyCount(schema, 0)
+  }
+  function IsObjectBooleanLike(schema: Types.TObject) {
+    return IsObjectPropertyCount(schema, 0)
+  }
+  function IsObjectDateLike(schema: Types.TObject) {
+    return IsObjectPropertyCount(schema, 0)
+  }
+  function IsObjectUint8ArrayLike(schema: Types.TObject) {
+    return IsObjectArrayLike(schema)
+  }
+  function IsObjectFunctionLike(schema: Types.TObject) {
+    return IsObjectPropertyCount(schema, 0)
+  }
+  function IsObjectConstructorLike(schema: Types.TObject) {
+    return IsObjectPropertyCount(schema, 0)
+  }
+  function IsObjectArrayLike(schema: Types.TObject) {
+    const length = Types.Type.Number()
+    return IsObjectPropertyCount(schema, 0) || (IsObjectPropertyCount(schema, 1) && 'length' in schema.properties && IntoBooleanResult(Visit(schema.properties['length'], length)) === TypeExtendsResult.True)
+  }
+  function IsObjectPromiseLike(schema: Types.TObject) {
+    const then = Types.Type.Function([Types.Type.Any()], Types.Type.Any())
+    return IsObjectPropertyCount(schema, 0) || (IsObjectPropertyCount(schema, 1) && 'then' in schema.properties && IntoBooleanResult(Visit(schema.properties['then'], then)) === TypeExtendsResult.True)
   }
   // ------------------------------------------------------------------------------------------
   // Intersect
@@ -91,9 +126,9 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
-    if (TypeGuard.TString(left) && TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
-    if (TypeGuard.TNumber(left) && TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
-    if (TypeGuard.TBoolean(left) && TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
+    if (TypeGuard.TString(left) && TypeGuard.TObject(right) && IsObjectStringLike(right)) return TypeExtendsResult.True
+    if (TypeGuard.TNumber(left) && TypeGuard.TObject(right) && IsObjectNumberLike(right)) return TypeExtendsResult.True
+    if (TypeGuard.TBoolean(left) && TypeGuard.TObject(right) && IsObjectBooleanLike(right)) return TypeExtendsResult.True
     if (!TypeGuard.TPrimitive(right)) return TypeExtendsResult.False
     return primitives.get(left[Types.Kind])!.has(right[Types.Kind]) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
@@ -105,20 +140,18 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
-    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
-
-    if (TypeGuard.TLiteral(right) && right.const === left.const) return TypeExtendsResult.True
+    if (typeof left.const === 'string' && TypeGuard.TObject(right) && IsObjectStringLike(right)) return TypeExtendsResult.True
+    if (typeof left.const === 'number' && TypeGuard.TObject(right) && IsObjectNumberLike(right)) return TypeExtendsResult.True
+    if (typeof left.const === 'boolean' && TypeGuard.TObject(right) && IsObjectBooleanLike(right)) return TypeExtendsResult.True
     if (typeof left.const === 'string' && TypeGuard.TString(right)) return TypeExtendsResult.True
     if (typeof left.const === 'number' && TypeGuard.TNumber(right)) return TypeExtendsResult.True
     if (typeof left.const === 'boolean' && TypeGuard.TBoolean(right)) return TypeExtendsResult.True
+    if (TypeGuard.TLiteral(right) && right.const === left.const) return TypeExtendsResult.True
     return TypeExtendsResult.False
   }
   // ------------------------------------------------------------------------------------------
   // Object
   // ------------------------------------------------------------------------------------------
-  function IsObjectEmpty(schema: Types.TObject) {
-    return globalThis.Object.keys(schema.properties).length === 0
-  }
   function Property(left: Types.TSchema, right: Types.TSchema) {
     if (Visit(left, right) === TypeExtendsResult.False) return TypeExtendsResult.False
     if (TypeGuard.TOptional(left) && !TypeGuard.TOptional(right)) return TypeExtendsResult.False
@@ -183,9 +216,6 @@ export namespace TypeExtends {
   // ------------------------------------------------------------------------------------------
   // Array
   // ------------------------------------------------------------------------------------------
-  function IsObjectArrayLike(schema: Types.TObject) {
-    return globalThis.Object.keys(schema.properties).length === 0 || TypeGuard.TNumber(schema.properties.length)
-  }
   function Array(left: Types.TArray, right: Types.TSchema) {
     if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
@@ -193,7 +223,7 @@ export namespace TypeExtends {
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
     if (TypeGuard.TObject(right) && IsObjectArrayLike(right)) return TypeExtendsResult.True
     if (!TypeGuard.TArray(right)) return TypeExtendsResult.False
-    return BooleanExtendsResult(Visit(left.items, right.items))
+    return IntoBooleanResult(Visit(left.items, right.items))
   }
 
   // ------------------------------------------------------------------------------------------
@@ -207,7 +237,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
-    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectArrayLike(right)) return TypeExtendsResult.True
     if (TypeGuard.TArray(right) && IsTupleArrayRight(left, right)) return TypeExtendsResult.True
     if (!TypeGuard.TTuple(right)) return TypeExtendsResult.False
     if ((left.items === undefined && right.items !== undefined) || (left.items !== undefined && right.items === undefined)) return TypeExtendsResult.False
@@ -222,7 +252,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
-    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectPromiseLike(right)) return TypeExtendsResult.True
     if (!TypeGuard.TPromise(right)) return TypeExtendsResult.False
     return Visit(left.item, right.item)
   }
@@ -234,7 +264,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
-    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectDateLike(right)) return TypeExtendsResult.True
     if (!TypeGuard.TDate(right)) return TypeExtendsResult.False
     return TypeExtendsResult.True
   }
@@ -246,7 +276,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
-    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectUint8ArrayLike(right)) return TypeExtendsResult.True
     if (!TypeGuard.TUint8Array(right)) return TypeExtendsResult.False
     return TypeExtendsResult.True
   }
@@ -258,7 +288,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
-    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectFunctionLike(right)) return TypeExtendsResult.True
 
     if (!TypeGuard.TFunction(right)) return TypeExtendsResult.False
     if (left.parameters.length > right.parameters.length) return TypeExtendsResult.False
@@ -275,7 +305,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
-    if (TypeGuard.TObject(right) && IsObjectEmpty(right)) return TypeExtendsResult.True
+    if (TypeGuard.TObject(right) && IsObjectConstructorLike(right)) return TypeExtendsResult.True
     if (!TypeGuard.TConstructor(right)) return TypeExtendsResult.False
     if (left.parameters.length > right.parameters.length) return TypeExtendsResult.False
     if (!left.parameters.every((schema, index) => Visit(left.parameters[index], schema) === TypeExtendsResult.True)) {

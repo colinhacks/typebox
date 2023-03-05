@@ -243,7 +243,7 @@ export namespace TypeCompiler {
       const propertySchema = schema.properties[propertyKey]
       if (schema.required && schema.required.includes(propertyKey)) {
         yield* Visit(propertySchema, memberExpression)
-        if (Types.TypeExtends.Check(Types.Type.Undefined(), propertySchema) === Types.TypeExtendsResult.True) {
+        if (Types.TypeExtends.Extends(Types.Type.Undefined(), propertySchema) === Types.TypeExtendsResult.True) {
           yield `('${propertyKey}' in ${value})`
         }
       } else {

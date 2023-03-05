@@ -81,12 +81,6 @@ describe('type/extends/String', () => {
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 
-  it('Should extend Record 6', () => {
-    type T = string extends Record<any, {}> ? 1 : 2
-    const R = TypeExtends.Extends(Type.String(), Type.Object({}))
-    Assert.deepEqual(R, TypeExtendsResult.False)
-  })
-
   it('Should extend Object 1', () => {
     type T = string extends {} ? 1 : 2
     const R = TypeExtends.Extends(Type.String(), Type.Object({}, { additionalProperties: false }))

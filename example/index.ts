@@ -18,14 +18,19 @@ import * as Types from '@sinclair/typebox'
 import { TypeSystem } from '@sinclair/typebox/system'
 import Type, { Static, TSchema, TypeExtends, TypeExtendsResult, TypeGuard } from '@sinclair/typebox'
 
-type AAA = (new (a: number) => void) extends {} ? 1 : 2
+// type T = string extends object ? 1 : 2
+// const R = TypeExtends.Extends(Type.String(), Type.Object({}))
+// Assert.deepEqual(R, TypeExtendsResult.False)
 
-const R = TypeExtends.Extends(Type.Array(Type.Any()), Type.Object({}, { additionalProperties: false }))
+type AAA = Promise<any> extends { then: any } ? 1 : 2
 
-type T = Array<any> extends object ? 1 : 2
+type A = any extends number ? 1 : 2
 
-type P = Record<string, number> extends [] ? true : false
+const R = TypeExtends.Extends(Type.Array(Type.Any()), Type.Object({ length: Type.Unknown() }))
+
+// const R = TypeExtends.Extends(
+//   Type.Any(),
+//   Type.Function([Type.Any()], Type.Any())
+// )
 
 console.log(TypeExtendsResult[R])
-
-type S = Promise<any> & string extends Array<string> | Array<number> ? true : false

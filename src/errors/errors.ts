@@ -300,7 +300,7 @@ export namespace ValueErrors {
       const propertySchema = schema.properties[propertyKey]
       if (schema.required && schema.required.includes(propertyKey)) {
         yield* Visit(propertySchema, references, `${path}/${propertyKey}`, value[propertyKey])
-        if (Types.TypeExtends.Check(Types.Type.Undefined(), schema) && !(propertyKey in value)) {
+        if (Types.TypeExtends.Extends(Types.Type.Undefined(), schema) && !(propertyKey in value)) {
           yield { type: ValueErrorType.ObjectRequiredProperties, schema: propertySchema, path: `${path}/${propertyKey}`, value: undefined, message: `Expected required property` }
         }
       } else {
