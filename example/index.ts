@@ -18,15 +18,8 @@ import * as Types from '@sinclair/typebox'
 import { TypeSystem } from '@sinclair/typebox/system'
 import Type, { Static, TSchema, TypeExtends, TypeExtendsResult, TypeGuard } from '@sinclair/typebox'
 
-// type T = string extends object ? 1 : 2
-// const R = TypeExtends.Extends(Type.String(), Type.Object({}))
-// Assert.deepEqual(R, TypeExtendsResult.False)
-
-type AAA = Promise<any> extends { then: any } ? 1 : 2
-
-type A = any extends number ? 1 : 2
-
-const R = TypeExtends.Extends(Type.Array(Type.Any()), Type.Object({ length: Type.Unknown() }))
+type T = string extends Record<number, any> ? 1 : 2
+const R = TypeExtends.Extends(Type.String(), Type.Record(Type.Number(), Type.Any()))
 
 // const R = TypeExtends.Extends(
 //   Type.Any(),

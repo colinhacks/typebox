@@ -187,8 +187,8 @@ export namespace TypeExtends {
   // Record
   // ------------------------------------------------------------------------------------------
   function GetRecordKey(schema: Types.TRecord) {
-    if ('^(0|[1-9][0-9]*)$' in schema.patternProperties) return { [Types.Kind]: 'Number', type: 'number' }
-    if ('^.*$' in schema.patternProperties) return { [Types.Kind]: 'String', type: 'string' }
+    if ('^(0|[1-9][0-9]*)$' in schema.patternProperties) return Types.Type.Number()
+    if ('^.*$' in schema.patternProperties)  return Types.Type.String()
     throw Error('TypeExtends: Cannot get record value')
   }
   function GetRecordValue(schema: Types.TRecord) {
@@ -196,15 +196,40 @@ export namespace TypeExtends {
     if ('^.*$' in schema.patternProperties) return schema.patternProperties['^.*$']
     throw Error('TypeExtends: Cannot get record value')
   }
+  function RecordRight(left: Types.TSchema, right: Types.TRecord) {
+    const recordkey = GetRecordKey(right)
+    // prettier-ignore
+    if(TypeGuard.TNumber(recordkey) && (
+        TypeGuard.TNumber(left) ||
+        TypeGuard.TBoolean(left) ||
+        TypeGuard.TUndefined(left) ||
+        TypeGuard.TNull(left) ||
+        TypeGuard.TNumber(left) ||
+        TypeGuard.TInteger(left) ||
+        TypeGuard.TUnknown(left) ||
+        TypeGuard.TNever(left)
+    )) return TypeExtendsResult.False
+    if(TypeGuard.TString(recordkey) && (
+      TypeGuard.TNumber(left) ||
+      TypeGuard.TBoolean(left) ||
+      TypeGuard.TUndefined(left) ||
+      TypeGuard.TNull(left) ||
+      TypeGuard.TNumber(left) ||
+      TypeGuard.TInteger(left) ||
+      TypeGuard.TUnknown(left) ||
+      TypeGuard.TNever(left)
+    )) return TypeExtendsResult.False
+    return TypeExtendsResult.True
+  }
   function Record(left: Types.TRecord, right: Types.TSchema) {
     if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
     if (TypeGuard.TUnion(right)) return UnionRight(left, right)
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
     if (TypeGuard.TObject(right)) {
-      const valueschema = GetRecordValue(left)
+      const recordvalue = GetRecordValue(left)
       for (const key of globalThis.Object.keys(right.properties)) {
-        if (Property(valueschema, right.properties[key]) === TypeExtendsResult.False) {
+        if (Property(recordvalue, right.properties[key]) === TypeExtendsResult.False) {
           return TypeExtendsResult.False
         }
       }
@@ -229,7 +254,7 @@ export namespace TypeExtends {
   // ------------------------------------------------------------------------------------------
   // Tuple
   // ------------------------------------------------------------------------------------------
-  function IsTupleArrayRight(left: Types.TTuple, right: Types.TSchema) {
+  function IsArrayOfTuple(left: Types.TTuple, right: Types.TSchema) {
     return TypeGuard.TArray(right) && left.items !== undefined && left.items.every((schema) => Visit(schema, right.items) === TypeExtendsResult.True)
   }
   function Tuple(left: Types.TTuple, right: Types.TSchema): TypeExtendsResult {
@@ -238,7 +263,7 @@ export namespace TypeExtends {
     if (TypeGuard.TUnknown(right)) return TypeExtendsResult.True
     if (TypeGuard.TAny(right)) return TypeExtendsResult.True
     if (TypeGuard.TObject(right) && IsObjectArrayLike(right)) return TypeExtendsResult.True
-    if (TypeGuard.TArray(right) && IsTupleArrayRight(left, right)) return TypeExtendsResult.True
+    if (TypeGuard.TArray(right) && IsArrayOfTuple(left, right)) return TypeExtendsResult.True
     if (!TypeGuard.TTuple(right)) return TypeExtendsResult.False
     if ((left.items === undefined && right.items !== undefined) || (left.items !== undefined && right.items === undefined)) return TypeExtendsResult.False
     if (left.items === undefined && right.items === undefined) return TypeExtendsResult.True
