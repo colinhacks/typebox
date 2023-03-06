@@ -119,10 +119,8 @@ export namespace ValueCreate {
   function Intersect(schema: Types.TIntersect, references: Types.TSchema[]): any {
     if ('default' in schema) {
       return schema.default
-    } else if (schema.minimum !== undefined) {
-      return schema.minimum
     } else {
-      return 0
+      throw Error('Cannot create intersect schema')
     }
   }
   function Literal(schema: Types.TLiteral, references: Types.TSchema[]): any {
