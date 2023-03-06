@@ -298,6 +298,9 @@ export namespace ValueCast {
     const conversion = TryConvertString(value)
     return ValueCheck.Check(schema, references, conversion) ? conversion : ValueCreate.Create(schema, references)
   }
+  function Symbol(schema: Types.TString, references: Types.TSchema[], value: any): any {
+    return ValueCheck.Check(schema, references, value) ? ValueClone.Clone(value) : ValueCreate.Create(schema, references)
+  }
   function Tuple(schema: Types.TTuple<any[]>, references: Types.TSchema[], value: any): any {
     if (ValueCheck.Check(schema, references, value)) return ValueClone.Clone(value)
     if (!globalThis.Array.isArray(value)) return ValueCreate.Create(schema, references)
@@ -360,6 +363,8 @@ export namespace ValueCast {
         return Self(anySchema, anyReferences, value)
       case 'String':
         return String(anySchema, anyReferences, value)
+      case 'Symbol':
+        return Symbol(anySchema, anyReferences, value)
       case 'Tuple':
         return Tuple(anySchema, anyReferences, value)
       case 'Undefined':

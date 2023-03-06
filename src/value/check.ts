@@ -290,7 +290,15 @@ export namespace ValueCheck {
     }
     return true
   }
-
+  function Symbol(schema: Types.TString, references: Types.TSchema[], value: any): boolean {
+    if (!(typeof value === 'symbol')) {
+      return false
+    }
+    if ('value' in schema && !(value.description === schema.value)) {
+      return false
+    }
+    return true
+  }
   function Tuple(schema: Types.TTuple<any[]>, references: Types.TSchema[], value: any): boolean {
     if (!globalThis.Array.isArray(value)) {
       return false
@@ -387,6 +395,8 @@ export namespace ValueCheck {
         return Self(anySchema, anyReferences, value)
       case 'String':
         return String(anySchema, anyReferences, value)
+      case 'Symbol':
+        return Symbol(anySchema, anyReferences, value)
       case 'Tuple':
         return Tuple(anySchema, anyReferences, value)
       case 'Undefined':

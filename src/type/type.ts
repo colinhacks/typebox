@@ -50,24 +50,6 @@ export type UnionLast<U> = UnionToIntersect<U extends unknown ? (x: U) => 0 : ne
 export type UnionToTuple<U, L = UnionLast<U>> = [U] extends [never] ? [] : [...UnionToTuple<Exclude<U, L>>, L]
 
 // --------------------------------------------------------------------------
-// Asserts
-// --------------------------------------------------------------------------
-export type Assert<T, E> = T extends E ? T : never
-export type AssertIntersect<T extends TSchema> = Assert<T, TIntersect>
-export type AssertUnion<T extends TSchema> = Assert<T, TUnion>
-export type AssertArray<T extends TSchema> = Assert<T, TArray>
-export type AssertObject<T extends TSchema> = Assert<T, TObject>
-export type AssertProperties<T extends TSchema> = Assert<T, TProperties>
-export type AssertString<T extends TSchema> = Assert<T, TString>
-export type AssertBoolean<T extends TSchema> = Assert<T, TBoolean>
-export type AssertNumber<T extends TSchema> = Assert<T, TNumber>
-export type AssertInteger<T extends TSchema> = Assert<T, TInteger>
-export type AssertNull<T extends TSchema> = Assert<T, TNull>
-export type AssertUndefined<T extends TSchema> = Assert<T, TUndefined>
-export type AssertDate<T extends TSchema> = Assert<T, TDate>
-export type AssertUint8Array<T extends TSchema> = Assert<T, TUint8Array>
-
-// --------------------------------------------------------------------------
 // Modifiers
 // --------------------------------------------------------------------------
 
@@ -103,18 +85,6 @@ export interface TSchema extends SchemaOptions {
   static: unknown
 }
 
-// prettier-ignore
-export type TPrimitive = 
-  | TUnknown
-  | TString 
-  | TBoolean 
-  | TNumber 
-  | TInteger 
-  | TNull 
-  | TUndefined
-  | TVoid
-  | TNever
-
 // --------------------------------------------------------------------------
 // TAnySchema
 // --------------------------------------------------------------------------
@@ -137,6 +107,7 @@ export type TAnySchema =
   | TPromise
   | TRecord
   | TSelf
+  | TSymbol
   | TRef
   | TString
   | TTuple
@@ -567,6 +538,16 @@ export interface TString<Format extends string = string> extends TSchema, String
   type: 'string'
 }
 
+// --------------------------------------------------------------------------
+// Symbol
+// --------------------------------------------------------------------------
+export interface SymbolOptions<Value extends string> extends SchemaOptions {
+  value?: Value
+}
+export interface TSymbol<Value extends string = string> extends TSchema, SymbolOptions<Value> {
+  [Kind]: 'Symbol'
+  static: symbol
+}
 // --------------------------------------------------------------------------
 // Tuple
 // --------------------------------------------------------------------------
@@ -1043,7 +1024,10 @@ export namespace Type {
   export function String<Format extends string>(options: StringOptions<StringFormatOption | Format> = {}): TString<Format> {
     return Create({ ...options, [Kind]: 'String', type: 'string' })
   }
-
+  /** `Standard` Creates a string type */
+  export function Symbol<Value extends string>(options: SymbolOptions<Value> = {}): TSymbol<Value> {
+    return Create({ ...options, [Kind]: 'Symbol', description: 'string' })
+  }
   /** `Standard` Creates a tuple type */
   export function Tuple<T extends TSchema[]>(items: [...T], options: SchemaOptions = {}): TTuple<T> {
     const additionalItems = false

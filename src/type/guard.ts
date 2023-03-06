@@ -374,7 +374,10 @@ export namespace TypeGuard {
       IsOptionalFormat(schema.format)
     )
   }
-
+  /** Returns true if the given schema is TSymbol */
+  export function TSymbol(schema: unknown): schema is Types.TSymbol {
+    return IsObject(schema) && schema[Types.Kind] === 'Symbol' && IsOptionalString(schema.$id) && IsOptionalString(schema.value)
+  }
   /** Returns true if the given schema is TTuple */
   export function TTuple(schema: unknown): schema is Types.TTuple {
     // prettier-ignore
@@ -468,11 +471,6 @@ export namespace TypeGuard {
   /** Returns true if the given schema is a registered user defined type */
   export function TUserDefined(schema: unknown): schema is Types.TSchema {
     return IsObject(schema) && IsString(schema[Types.Kind]) && Custom.Has(schema[Types.Kind])
-  }
-
-  /** Returns true if the given schema is a primitive type such as string, number, boolean, null, unknown, never */
-  export function TPrimitive(schema: unknown): schema is Types.TPrimitive {
-    return TUnknown(schema) || TString(schema) || TBoolean(schema) || TNumber(schema) || TInteger(schema) || TNull(schema) || TUndefined(schema) || TVoid(schema) || TNever(schema)
   }
 
   /** Returns true if this schema has the ReadonlyOptional modifier */

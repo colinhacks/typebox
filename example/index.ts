@@ -17,27 +17,12 @@
 import * as Types from '@sinclair/typebox'
 import { TypeSystem } from '@sinclair/typebox/system'
 import Type, { Static, TSchema, TypeExtends, TypeExtendsResult, TypeGuard } from '@sinclair/typebox'
+import { Value } from '@sinclair/typebox/value'
 
-const A = Type.Object({
-  x: Type.Number(),
-  y: Type.String(),
-})
+const T = Type.Symbol()
 
-const B = Type.Object({
-  b: Type.Number(),
-  c: Type.String(),
-})
-const C = Type.Object({
-  ax: Type.Number(),
-  ay: Type.String(),
-})
+const R = Value.Cast(T, Symbol())
 
-const D = Type.Object({
-  ab: Type.Number(),
-  ac: Type.String(),
-})
-const I = Type.Intersect([A, B, Type.Union([C, D])])
+Type.Symbol({ value: '123' })
 
-type T = Static<typeof I>
-
-console.log(I)
+console.log(R)
