@@ -18,7 +18,7 @@
     "./system": "./system/index.js",
     "./type": "./type/index.js",
     "./value": "./value/index.js",
-    ".": "./typebox.js"
+    ".": "./index.js"
   },
   "repository": {
     "type": "git",

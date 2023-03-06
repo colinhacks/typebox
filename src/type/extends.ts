@@ -27,7 +27,7 @@ THE SOFTWARE.
 ---------------------------------------------------------------------------*/
 
 import { TypeGuard } from './guard'
-import * as Types from '../typebox'
+import * as Types from '..'
 
 export enum TypeExtendsResult {
   Union,

@@ -1,4 +1,4 @@
 {
   "extends": "../tsconfig.json",
-  "files": ["compiler/index.ts", "type/index.ts", "system/index.ts", "value/index.ts", "typebox.ts"]
+  "files": ["compiler/index.ts", "type/index.ts", "system/index.ts", "value/index.ts", "index.ts"]
 }

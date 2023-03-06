@@ -29,7 +29,7 @@ THE SOFTWARE.
 import { ValueErrors, ValueError } from '../errors/index'
 import { TypeSystem, Custom, Format } from '../system/index'
 import { ValueHash } from '../value/hash'
-import * as Types from '../typebox'
+import * as Types from '..'
 
 // -------------------------------------------------------------------
 // CheckFunction

@@ -26,7 +26,7 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
-import * as Types from '../typebox'
+import * as Types from '..'
 import { ValueErrors, ValueError } from '../errors/index'
 import { ValueHash } from './hash'
 import { ValueEqual } from './equal'

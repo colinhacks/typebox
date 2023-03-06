@@ -27,7 +27,7 @@ THE SOFTWARE.
 ---------------------------------------------------------------------------*/
 
 import { Custom } from '../system/custom'
-import * as Types from '../typebox'
+import * as Types from '..'
 
 export class ValueCreateUnknownTypeError extends Error {
   constructor(public readonly schema: Types.TSchema) {
