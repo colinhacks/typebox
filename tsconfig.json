@@ -16,9 +16,6 @@
       "@sinclair/typebox/compiler": [
         "src/compiler/index.ts"
       ],
-      "@sinclair/typebox/custom": [
-        "src/custom/index.ts"
-      ],
       "@sinclair/typebox/system": [
         "src/system/index.ts"
       ],

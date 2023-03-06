@@ -13,19 +13,16 @@
 // import { TypeGuard } from 'src/guard/guard'
 // import { Value } from '@sinclair/typebox/value'
 
-import { TypeCompiler } from '@sinclair/typebox/compiler'
-import * as Types from '@sinclair/typebox'
-import { TypeSystem } from '@sinclair/typebox/system'
-import Type, { Static, TSchema, TypeExtends, TypeExtendsResult, TypeGuard } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
+import { Type } from '@sinclair/typebox'
 
-const T = Type.Symbol('hello', { $id: 'asd' })
-const C = TypeCompiler.Compile(T)
-const V = Symbol('hello')
-const R = C.Check(V)
-const E = [...C.Errors(V)]
+const T = Type.Intersect([
+    Type.Union([
+        Type.Object({ x: Type.Number(), y: Type.Number() }),
+        Type.Object({ x: Type.Number(), y: Type.Number() })
+    ])
+])
 
-type X = string extends Record<number, any> ? 1 : 2
+const R = Value.Create(T)
 
-const X = Type.Extends(Type.String(), Type.Number(), Type.Literal(true), Type.Extends(Type.Record(Type.Number(), Type.Any()), Type.String(), Type.Literal(true), Type.Literal(1)))
-console.log(X)
+console.log(R)

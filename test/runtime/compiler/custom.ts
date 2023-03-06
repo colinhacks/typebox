@@ -4,7 +4,6 @@ import { Ok, Fail } from './validate'
 
 describe('type/compiler/Custom', () => {
   Custom.Set('BigInt', (schema, value) => typeof value === 'bigint')
-
   it('Should validate bigint', () => {
     const T = Type.Unsafe({ [Kind]: 'BigInt' })
     Ok(T, 1n)
