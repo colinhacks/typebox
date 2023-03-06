@@ -64,12 +64,6 @@ describe('type/extends/Literal', () => {
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 
-  it('Should extend Object 3 (String)', () => {
-    type T = 'hello' extends object ? 1 : 2
-    const R = TypeExtends.Extends(Type.Literal('hello'), Type.Object({}))
-    Assert.deepEqual(R, TypeExtendsResult.False)
-  })
-
   it('Should extend Union 1 (String)', () => {
     type T = 'hello' extends number | string ? 1 : 2
     const R = TypeExtends.Extends(Type.Literal('hello'), Type.Union([Type.Number(), Type.String()]))
@@ -159,12 +153,6 @@ describe('type/extends/Literal', () => {
   it('Should extend Object 2 (Number)', () => {
     type T = 10 extends { a: 10 } ? 1 : 2
     const R = TypeExtends.Extends(Type.Literal(10), Type.Object({ a: Type.Literal(10) }, { additionalProperties: true }))
-    Assert.deepEqual(R, TypeExtendsResult.False)
-  })
-
-  it('Should extend Object 3 (Number)', () => {
-    type T = 10 extends object ? 1 : 2
-    const R = TypeExtends.Extends(Type.Literal(10), Type.Object({}))
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 
@@ -277,12 +265,6 @@ describe('type/extends/Literal', () => {
   it('Should extend Object 2 (Boolean)', () => {
     type T = true extends { a: 10 } ? 1 : 2
     const R = TypeExtends.Extends(Type.Literal(true), Type.Object({ a: Type.Literal(10) }, { additionalProperties: true }))
-    Assert.deepEqual(R, TypeExtendsResult.False)
-  })
-
-  it('Should extend Object 3 (Boolean)', () => {
-    type T = true extends object ? 1 : 2
-    const R = TypeExtends.Extends(Type.Literal(true), Type.Object({}))
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 

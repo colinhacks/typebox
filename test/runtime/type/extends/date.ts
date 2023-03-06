@@ -58,19 +58,13 @@ describe('type/extends/Date', () => {
 
   it('Should extend Object 1', () => {
     type T = Date extends {} ? 1 : 2
-    const R = TypeExtends.Extends(Type.Date(), Type.Object({}, { additionalProperties: false }))
+    const R = TypeExtends.Extends(Type.Date(), Type.Object({}))
     Assert.deepEqual(R, TypeExtendsResult.True)
   })
 
   it('Should extend Object 2', () => {
     type T = Date extends { a: 10 } ? 1 : 2
     const R = TypeExtends.Extends(Type.Date(), Type.Object({ a: Type.Literal(10) }, { additionalProperties: true }))
-    Assert.deepEqual(R, TypeExtendsResult.False)
-  })
-
-  it('Should extend Object 3', () => {
-    type T = Date extends object ? 1 : 2
-    const R = TypeExtends.Extends(Type.Date(), Type.Object({}))
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 

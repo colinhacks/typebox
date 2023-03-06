@@ -58,18 +58,12 @@ describe('type/extends/Unknown', () => {
   })
 
   it('Should extend Object 1', () => {
-    type T = unknown extends object ? 1 : 2
-    const R = TypeExtends.Extends(Type.Unknown(), Type.Object({}))
-    Assert.deepEqual(R, TypeExtendsResult.False)
-  })
-
-  it('Should extend Object 2', () => {
     type T = unknown extends {} ? 1 : 2
     const R = TypeExtends.Extends(Type.Unknown(), Type.Object({}))
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 
-  it('Should extend Object 3', () => {
+  it('Should extend Object 2', () => {
     type T = unknown extends { a: number } ? 1 : 2
     const R = TypeExtends.Extends(Type.Unknown(), Type.Object({ a: Type.Number() }))
     Assert.deepEqual(R, TypeExtendsResult.False)

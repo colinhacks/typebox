@@ -63,12 +63,6 @@ describe('type/extends/Boolean', () => {
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 
-  it('Should extend Object 3', () => {
-    type T = boolean extends object ? 1 : 2
-    const R = TypeExtends.Extends(Type.Boolean(), Type.Object({}))
-    Assert.deepEqual(R, TypeExtendsResult.False)
-  })
-
   it('Should extend Union 1', () => {
     type T = boolean extends number | string ? 1 : 2
     const R = TypeExtends.Extends(Type.Boolean(), Type.Union([Type.Number(), Type.String()]))

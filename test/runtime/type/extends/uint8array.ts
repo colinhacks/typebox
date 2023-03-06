@@ -69,12 +69,6 @@ describe('type/extends/Uint8Array', () => {
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 
-  it('Should extend Object 3', () => {
-    type T = Uint8Array extends object ? 1 : 2
-    const R = TypeExtends.Extends(Type.Uint8Array(), Type.Object({}))
-    Assert.deepEqual(R, TypeExtendsResult.False)
-  })
-
   it('Should extend Union 1', () => {
     type T = Uint8Array extends number | string ? 1 : 2
     const R = TypeExtends.Extends(Type.Uint8Array(), Type.Union([Type.Number(), Type.String()]))

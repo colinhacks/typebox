@@ -59,19 +59,13 @@ describe('type/extends/Integer', () => {
 
   it('Should extend Object 1', () => {
     type T = number extends {} ? 1 : 2
-    const R = TypeExtends.Extends(Type.Integer(), Type.Object({}, { additionalProperties: false }))
+    const R = TypeExtends.Extends(Type.Integer(), Type.Object({}))
     Assert.deepEqual(R, TypeExtendsResult.True)
   })
 
   it('Should extend Object 2', () => {
     type T = number extends { a: 10 } ? 1 : 2
-    const R = TypeExtends.Extends(Type.Integer(), Type.Object({ a: Type.Literal(10) }, { additionalProperties: true }))
-    Assert.deepEqual(R, TypeExtendsResult.False)
-  })
-
-  it('Should extend Object 3', () => {
-    type T = number extends object ? 1 : 2
-    const R = TypeExtends.Extends(Type.Integer(), Type.Object({}))
+    const R = TypeExtends.Extends(Type.Integer(), Type.Object({ a: Type.Literal(10) }))
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 

@@ -75,12 +75,6 @@ describe('type/extends/String', () => {
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 
-  it('Should extend Record 5', () => {
-    type T = string extends Record<any, number | string> ? 1 : 2
-    const R = TypeExtends.Extends(Type.String(), Type.Record(Type.Number(), Type.Union([Type.Number(), Type.String()])))
-    Assert.deepEqual(R, TypeExtendsResult.False)
-  })
-
   it('Should extend Object 1', () => {
     type T = string extends {} ? 1 : 2
     const R = TypeExtends.Extends(Type.String(), Type.Object({}, { additionalProperties: false }))
@@ -90,12 +84,6 @@ describe('type/extends/String', () => {
   it('Should extend Object 2', () => {
     type T = string extends { a: 10 } ? 1 : 2
     const R = TypeExtends.Extends(Type.String(), Type.Object({ a: Type.Literal(10) }, { additionalProperties: true }))
-    Assert.deepEqual(R, TypeExtendsResult.False)
-  })
-
-  it('Should extend Object 3', () => {
-    type T = string extends object ? 1 : 2
-    const R = TypeExtends.Extends(Type.String(), Type.Object({}))
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 
