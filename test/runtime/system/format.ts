@@ -1,4 +1,4 @@
-import { Format } from '@sinclair/typebox/format'
+import { Format } from '@sinclair/typebox/system'
 import { Assert } from '../assert/index'
 
 describe('format/Format', () => {

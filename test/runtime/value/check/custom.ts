@@ -1,5 +1,5 @@
 import { Value } from '@sinclair/typebox/value'
-import { Custom } from '@sinclair/typebox/custom'
+import { Custom } from '@sinclair/typebox/system'
 import { Type, Kind } from '@sinclair/typebox'
 import { Assert } from '../../assert/index'
 

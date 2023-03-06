@@ -28,9 +28,9 @@ THE SOFTWARE.
 
 import * as Types from '../typebox'
 import { TypeSystem } from '../system/index'
-import { Format } from '../format/index'
-import { Custom } from '../custom/index'
-import { ValueHash } from '../hash/index'
+import { Custom } from '../system/custom'
+import { Format } from '../system/format'
+import { ValueHash } from './hash'
 
 export class ValueCheckUnknownTypeError extends Error {
   constructor(public readonly schema: Types.TSchema) {

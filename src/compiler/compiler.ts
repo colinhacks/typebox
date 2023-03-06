@@ -27,10 +27,8 @@ THE SOFTWARE.
 ---------------------------------------------------------------------------*/
 
 import { ValueErrors, ValueError } from '../errors/index'
-import { TypeSystem } from '../system/index'
-import { Format } from '../format/index'
-import { Custom } from '../custom/index'
-import { ValueHash } from '../hash/index'
+import { TypeSystem, Custom, Format } from '../system/index'
+import { ValueHash } from '../value/hash'
 import * as Types from '../typebox'
 
 // -------------------------------------------------------------------

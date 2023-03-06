@@ -27,8 +27,7 @@ THE SOFTWARE.
 ---------------------------------------------------------------------------*/
 
 import { TypeCompiler, ValueError, TypeCheck } from '@sinclair/typebox/compiler'
-import { TypeSystem } from '@sinclair/typebox/system'
-import { Custom } from '@sinclair/typebox/custom'
+import { TypeSystem, Custom } from '@sinclair/typebox/system'
 import { Value } from '@sinclair/typebox/value'
 import * as Types from '@sinclair/typebox'
 

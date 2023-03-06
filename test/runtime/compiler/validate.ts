@@ -1,7 +1,7 @@
 import { TypeCompiler } from '@sinclair/typebox/compiler'
+import { Format } from '@sinclair/typebox/system'
 import { Value } from '@sinclair/typebox/value'
 import { TSchema } from '@sinclair/typebox'
-import { Format } from 'src/format'
 
 // -------------------------------------------------------------------------
 // Test Formats: https://github.com/ajv-validator/ajv-formats/blob/master/src/formats.ts

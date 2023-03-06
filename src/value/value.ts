@@ -28,7 +28,7 @@ THE SOFTWARE.
 
 import * as Types from '../typebox'
 import { ValueErrors, ValueError } from '../errors/index'
-import { ValueHash } from '../hash/index'
+import { ValueHash } from './hash'
 import { ValueEqual } from './equal'
 import { ValueCast } from './cast'
 import { ValueClone } from './clone'

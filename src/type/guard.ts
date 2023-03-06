@@ -26,7 +26,7 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
-import { Custom } from '../custom/index'
+import { Custom } from '../system/custom'
 import * as Types from './type'
 
 export class TypeGuardUnknownTypeError extends Error {

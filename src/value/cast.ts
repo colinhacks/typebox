@@ -30,7 +30,7 @@ import * as Types from '../typebox'
 import { ValueCreate } from './create'
 import { ValueCheck } from './check'
 import { ValueClone } from './clone'
-import { Custom } from '../custom/index'
+import { Custom } from '../system/custom'
 
 // ----------------------------------------------------------------------------------------------
 // Errors

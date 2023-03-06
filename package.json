@@ -14,10 +14,7 @@
   "types": "./typebox.d.ts",
   "exports": {
     "./compiler": "./compiler/index.js",
-    "./custom": "./custom/index.js",
     "./errors": "./errors/index.js",
-    "./format": "./format/index.js",
-    "./hash": "./hash/index.js",
     "./system": "./system/index.js",
     "./type": "./type/index.js",
     "./value": "./value/index.js",

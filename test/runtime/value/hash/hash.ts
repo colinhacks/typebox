@@ -1,5 +1,5 @@
-import { ValueHash } from '@sinclair/typebox/hash'
-import { Assert } from '../assert/index'
+import { ValueHash } from '@sinclair/typebox/value'
+import { Assert } from '../../assert/index'
 
 describe('Hash', () => {
   it('Should hash number', () => {
@@ -8,7 +8,6 @@ describe('Hash', () => {
     const B = ValueHash.Create(2)
     Assert.notEqual(A, B)
   })
-
   it('Should hash string', () => {
     Assert.equal('bigint', typeof ValueHash.Create('hello'))
     const A = ValueHash.Create('hello')

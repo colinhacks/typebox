@@ -1,4 +1,4 @@
-import { Custom } from '@sinclair/typebox/custom'
+import { Custom } from '@sinclair/typebox/system'
 import { Type, Kind } from '@sinclair/typebox'
 import { Ok, Fail } from './validate'
 

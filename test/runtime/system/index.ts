@@ -1,4 +1,2 @@
-import './AllowArrayObjects'
-import './AllowNaN'
-import './CreateFormat'
-import './CreateType'
+import './format'
+import './system'

@@ -27,8 +27,8 @@ THE SOFTWARE.
 ---------------------------------------------------------------------------*/
 
 import { Kind, Type } from '../typebox'
-import { Custom } from '../custom/index'
-import { Format } from '../format/index'
+import { Custom } from './custom'
+import { Format } from './format'
 
 export class TypeSystemDuplicateTypeKind extends Error {
   constructor(kind: string) {

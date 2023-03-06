@@ -25,4 +25,7 @@ const V = Symbol('hello')
 const R = C.Check(V)
 const E = [...C.Errors(V)]
 
-const X = Type.Extends(Type.Number(), Type.String(), Type.Number(), Type.String())
+type X = string extends Record<number, any> ? 1 : 2
+
+const X = Type.Extends(Type.String(), Type.Number(), Type.Literal(true), Type.Extends(Type.Record(Type.Number(), Type.Any()), Type.String(), Type.Literal(true), Type.Literal(1)))
+console.log(X)
