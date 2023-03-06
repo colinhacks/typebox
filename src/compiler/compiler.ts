@@ -292,6 +292,13 @@ export namespace TypeCompiler {
       yield `format('${schema.format}', ${value})`
     }
   }
+  function* Symbol(schema: Types.TSymbol, value: string): IterableIterator<string> {
+    yield `(typeof ${value} === 'symbol')`
+    if ('value' in schema) {
+      const description = typeof schema.value === 'string' ? `'${schema.value}'` : schema.value
+      yield `${value}.description === ${description}`
+    }
+  }
   function* Tuple(schema: Types.TTuple<any[]>, value: string): IterableIterator<string> {
     yield `(Array.isArray(${value}))`
     if (schema.items === undefined) return yield `${value}.length === 0`
@@ -376,6 +383,8 @@ export namespace TypeCompiler {
         return yield* Self(anySchema, value)
       case 'String':
         return yield* String(anySchema, value)
+      case 'Symbol':
+        return yield* Symbol(anySchema, value)
       case 'Tuple':
         return yield* Tuple(anySchema, value)
       case 'Undefined':

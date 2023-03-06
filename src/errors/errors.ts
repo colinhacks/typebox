@@ -79,6 +79,8 @@ export enum ValueErrorType {
   StringPattern,
   StringFormatUnknown,
   StringFormat,
+  Symbol,
+  SymbolDescription,
   TupleZeroLength,
   TupleLength,
   Undefined,
@@ -379,7 +381,14 @@ export namespace ValueErrors {
       }
     }
   }
-
+  function* Symbol(schema: Types.TSymbol, references: Types.TSchema[], path: string, value: any): IterableIterator<ValueError> {
+    if (!(typeof value === 'symbol')) {
+      return yield { type: ValueErrorType.Symbol, schema, path, value, message: 'Expected symbol' }
+    }
+    if ('value' in schema && !(value.description === schema.value)) {
+      return yield { type: ValueErrorType.SymbolDescription, schema, path, value, message: 'Invalid symbol value' }
+    }
+  }
   function* Tuple(schema: Types.TTuple<any[]>, references: Types.TSchema[], path: string, value: any): IterableIterator<ValueError> {
     if (!globalThis.Array.isArray(value)) {
       return yield { type: ValueErrorType.Array, schema, path, value, message: 'Expected Array' }
@@ -488,6 +497,8 @@ export namespace ValueErrors {
         return yield* Self(anySchema, anyReferences, path, value)
       case 'String':
         return yield* String(anySchema, anyReferences, path, value)
+      case 'Symbol':
+        return yield* Symbol(anySchema, anyReferences, path, value)
       case 'Tuple':
         return yield* Tuple(anySchema, anyReferences, path, value)
       case 'Undefined':

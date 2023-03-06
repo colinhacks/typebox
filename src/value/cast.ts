@@ -298,7 +298,7 @@ export namespace ValueCast {
     const conversion = TryConvertString(value)
     return ValueCheck.Check(schema, references, conversion) ? conversion : ValueCreate.Create(schema, references)
   }
-  function Symbol(schema: Types.TString, references: Types.TSchema[], value: any): any {
+  function Symbol(schema: Types.TSymbol, references: Types.TSchema[], value: any): any {
     return ValueCheck.Check(schema, references, value) ? ValueClone.Clone(value) : ValueCreate.Create(schema, references)
   }
   function Tuple(schema: Types.TTuple<any[]>, references: Types.TSchema[], value: any): any {

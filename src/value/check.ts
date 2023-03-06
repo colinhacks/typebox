@@ -290,7 +290,7 @@ export namespace ValueCheck {
     }
     return true
   }
-  function Symbol(schema: Types.TString, references: Types.TSchema[], value: any): boolean {
+  function Symbol(schema: Types.TSymbol, references: Types.TSchema[], value: any): boolean {
     if (!(typeof value === 'symbol')) {
       return false
     }

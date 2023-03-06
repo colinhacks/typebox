@@ -376,7 +376,14 @@ export namespace TypeGuard {
   }
   /** Returns true if the given schema is TSymbol */
   export function TSymbol(schema: unknown): schema is Types.TSymbol {
-    return IsObject(schema) && schema[Types.Kind] === 'Symbol' && IsOptionalString(schema.$id) && IsOptionalString(schema.value)
+    // prettier-ignore
+    return (
+      IsObject(schema) && schema[Types.Kind] === 'Symbol' && 
+      IsOptionalString(schema.$id) && (
+        IsOptionalString(schema.value) ||
+        IsOptionalNumber(schema.value)
+      )
+    )
   }
   /** Returns true if the given schema is TTuple */
   export function TTuple(schema: unknown): schema is Types.TTuple {
@@ -510,6 +517,7 @@ export namespace TypeGuard {
       TSelf(schema) ||
       TRef(schema) ||
       TString(schema) ||
+      TSymbol(schema) ||
       TTuple(schema) ||
       TUndefined(schema) ||
       TUnion(schema) ||

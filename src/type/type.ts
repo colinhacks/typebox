@@ -541,12 +541,13 @@ export interface TString<Format extends string = string> extends TSchema, String
 // --------------------------------------------------------------------------
 // Symbol
 // --------------------------------------------------------------------------
-export interface SymbolOptions<Value extends string> extends SchemaOptions {
-  value?: Value
-}
-export interface TSymbol<Value extends string = string> extends TSchema, SymbolOptions<Value> {
+
+export type SymbolValue = string | number | undefined
+
+export interface TSymbol<Value extends SymbolValue = SymbolValue> extends TSchema, SchemaOptions {
   [Kind]: 'Symbol'
   static: symbol
+  value: Value
 }
 // --------------------------------------------------------------------------
 // Tuple
@@ -1024,9 +1025,9 @@ export namespace Type {
   export function String<Format extends string>(options: StringOptions<StringFormatOption | Format> = {}): TString<Format> {
     return Create({ ...options, [Kind]: 'String', type: 'string' })
   }
-  /** `Standard` Creates a string type */
-  export function Symbol<Value extends string>(options: SymbolOptions<Value> = {}): TSymbol<Value> {
-    return Create({ ...options, [Kind]: 'Symbol', description: 'string' })
+  /** `Standard` Creates a symbol type */
+  export function Symbol<Value extends string | number | undefined>(value: Value, options?: SchemaOptions): TSymbol<Value> {
+    return Create({ ...options, [Kind]: 'Symbol', value })
   }
   /** `Standard` Creates a tuple type */
   export function Tuple<T extends TSchema[]>(items: [...T], options: SchemaOptions = {}): TTuple<T> {
