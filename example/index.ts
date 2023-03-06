@@ -20,13 +20,9 @@ import Type, { Static, TSchema, TypeExtends, TypeExtendsResult, TypeGuard } from
 import { Value } from '@sinclair/typebox/value'
 
 const T = Type.Symbol('hello', { $id: 'asd' })
-
 const C = TypeCompiler.Compile(T)
-
 const V = Symbol('hello')
-
 const R = C.Check(V)
-
 const E = [...C.Errors(V)]
 
-console.log(R, E)
+const X = Type.Extends(Type.Number(), Type.String(), Type.Number(), Type.String())
