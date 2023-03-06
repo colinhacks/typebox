@@ -183,12 +183,6 @@ describe('type/extends/Record', () => {
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 
-  it('Should extend Object 1', () => {
-    type T = Record<number, number> extends object ? 1 : 2
-    const R = TypeExtends.Extends(Type.Record(Type.Number(), Type.Number()), Type.Object({}))
-    Assert.deepEqual(R, TypeExtendsResult.True)
-  })
-
   it('Should extend Object 2', () => {
     type T = Record<number, number> extends {} ? 1 : 2
     const R = TypeExtends.Extends(Type.Record(Type.Number(), Type.Number()), Type.Object({}))

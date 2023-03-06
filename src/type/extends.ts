@@ -301,6 +301,14 @@ export namespace TypeExtends {
     if (TypeGuard.TDate(left) && IsObjectDateLike(right)) return TypeExtendsResult.True
     if (TypeGuard.TConstructor(left) && IsObjectConstructorLike(right)) return TypeExtendsResult.True
     if (TypeGuard.TFunction(left) && IsObjectFunctionLike(right)) return TypeExtendsResult.True
+    if (TypeGuard.TRecord(left) && TypeGuard.TString(RecordKey(left))) {
+      // note: When expressing a Record with literal key values, the Record is converted into
+      // a Object with the Hint assigned as `Record`. This is used to invert the extends logic.
+      return right[Types.Hint] === 'Record' ? TypeExtendsResult.True : TypeExtendsResult.False
+    }
+    if (TypeGuard.TRecord(left) && TypeGuard.TNumber(RecordKey(left))) {
+      return IsObjectPropertyCount(right, 0) ? TypeExtendsResult.True : TypeExtendsResult.False
+    }
     return TypeExtendsResult.False
   }
   function Property(left: Types.TSchema, right: Types.TSchema) {
@@ -343,9 +351,9 @@ export namespace TypeExtends {
     if (TypeGuard.TUint8Array(left) && TypeGuard.TNumber(Key)) return Visit(left, Value)
     if (TypeGuard.TString(left) && TypeGuard.TNumber(Key)) return Visit(left, Value)
     if (TypeGuard.TArray(left) && TypeGuard.TNumber(Key)) return Visit(left, Value)
-    if (TypeGuard.TObject(left) && TypeGuard.TString(Key)) {
-      for (const key of globalThis.Object.keys(right.properties)) {
-        if (Property(Value, right.properties[key]) === TypeExtendsResult.False) {
+    if (TypeGuard.TObject(left)) {
+      for (const key of globalThis.Object.keys(left.properties)) {
+        if (Property(Value, left.properties[key]) === TypeExtendsResult.False) {
           return TypeExtendsResult.False
         }
       }
@@ -417,7 +425,7 @@ export namespace TypeExtends {
     if (TypeGuard.TAny(right)) return AnyRight(left, right)
     if (TypeGuard.TObject(right) && IsObjectPromiseLike(right)) return TypeExtendsResult.True
     if (!TypeGuard.TPromise(right)) return TypeExtendsResult.False
-    return Visit(left.item, right.item)
+    return IntoBooleanResult(Visit(left.item, right.item))
   }
   // ------------------------------------------------------------------------------------------
   // Date

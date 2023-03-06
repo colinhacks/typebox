@@ -18,7 +18,7 @@ import * as Types from '@sinclair/typebox'
 import { TypeSystem } from '@sinclair/typebox/system'
 import Type, { Static, TSchema, TypeExtends, TypeExtendsResult, TypeGuard } from '@sinclair/typebox'
 
-type T = undefined extends any | number ? 1 : 2
-const R = TypeExtends.Extends(Type.Undefined(), Type.Union([Type.Any(), Type.Number()]))
+type T = Record<number, number> extends {} ? 1 : 2
+const R = TypeExtends.Extends(Type.Record(Type.Number(), Type.Number()), Type.Object({}))
 
 console.log(TypeExtendsResult[R])

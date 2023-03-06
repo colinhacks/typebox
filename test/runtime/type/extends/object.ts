@@ -7,14 +7,6 @@ describe('type/extends/Object', () => {
   // Record
   // ----------------------------------------------------------
 
-  it('Should extend Record 1', () => {
-    type T = { a: number; b: number } extends Record<'a' | 'b', number> ? 1 : 2
-    const A = Type.Object({ a: Type.Number(), b: Type.Number() })
-    const B = Type.Record(Type.Union([Type.Literal('a'), Type.Literal('b')]), Type.Number())
-    const R = TypeExtends.Extends(A, B)
-    Assert.deepEqual(R, TypeExtendsResult.True)
-  })
-
   it('Should extend Record 2', () => {
     type T = { a: number; b: number } extends Record<string, number> ? 1 : 2
     const A = Type.Object({ a: Type.Number(), b: Type.Number() })

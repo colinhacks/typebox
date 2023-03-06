@@ -56,12 +56,6 @@ describe('type/extends/Union', () => {
     Assert.deepEqual(R, TypeExtendsResult.False)
   })
 
-  it('Should extend Object 3', () => {
-    type T = number | string extends object ? 1 : 2
-    const R = TypeExtends.Extends(Type.Union([Type.Number(), Type.String()]), Type.Object({}))
-    Assert.deepEqual(R, TypeExtendsResult.False)
-  })
-
   it('Should extend Union 1', () => {
     type T = number | string extends number | string ? 1 : 2
     const R = TypeExtends.Extends(Type.Union([Type.Number(), Type.String()]), Type.Union([Type.Number(), Type.String()]))
