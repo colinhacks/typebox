@@ -27,7 +27,3 @@ THE SOFTWARE.
 ---------------------------------------------------------------------------*/
 
 export * from './type/index'
-
-import { Type } from './type/index'
-
-export default Type

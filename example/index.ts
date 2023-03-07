@@ -13,16 +13,31 @@
 // import { TypeGuard } from 'src/guard/guard'
 // import { Value } from '@sinclair/typebox/value'
 
+import { Type, Static, TypeGuard } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
-import { Type } from '@sinclair/typebox'
+import * as Types from '@sinclair/typebox'
+
+
+
 
 const T = Type.Intersect([
     Type.Union([
-        Type.Object({ x: Type.Number(), y: Type.Number() }),
-        Type.Object({ x: Type.Number(), y: Type.Number() })
+        Type.Object({ x: Type.String() }),
+        Type.Object({ x: Type.String() })
+    ]),
+    Type.Intersect([
+        Type.Object({ x: Type.Number() }),
+        Type.Object({ x: Type.String() })
     ])
 ])
 
-const R = Value.Create(T)
 
-console.log(R)
+
+
+
+
+console.log(JSON.stringify(RequiredEvaluator.Evaluate(T), null, 2))
+
+
+
+

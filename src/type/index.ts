@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
+export * from './evaluate'
 export * from './extends'
 export * from './guard'
 export * from './normal'
