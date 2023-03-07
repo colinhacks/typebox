@@ -288,9 +288,8 @@ export interface IntersectOptions extends SchemaOptions {
 
 type IntersectStatic<T extends TSchema[], P extends unknown[]> = TupleToIntersect<{ [K in keyof T]: Static<T[K], P> }>
 
-export interface TIntersect<T extends TSchema[] = any[]> extends TSchema, IntersectOptions {
+export interface TIntersect<T extends TSchema[] = TSchema[]> extends TSchema, IntersectOptions {
   [Kind]: 'Intersect'
-  // static: IntersectReduce<unknown, IntersectEvaluate<T, []>>
   static: IntersectStatic<T, []>
   allOf: [...T]
 }

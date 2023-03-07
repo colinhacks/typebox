@@ -26,62 +26,56 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
+import { ValueClone } from '../value/clone'
 import { TypeGuard } from './guard'
 import * as Types from './type'
 
-// --------------------------------------------------------------------
-// EvaluatedPartial
-// --------------------------------------------------------------------
-export type EvaluatedPartialIntersect<T extends Types.TIntersect> = { [K in keyof T['allOf']]: T['allOf'][K] extends Types.TSchema ? EvaluatedPartial<T['allOf'][K]> : never }
-export type EvaluatedPartialUnion<T extends Types.TUnion> = { [K in keyof T['anyOf']]: T['anyOf'][K] extends Types.TSchema ? EvaluatedPartial<T['anyOf'][K]> : never }
-export type EvaluatedPartialObject<T extends Types.TObject> = Types.TPartial<T>
-export type EvaluatedPartial<T extends Types.TSchema> = T extends Types.TIntersect ? EvaluatedPartialIntersect<T> : T extends Types.TUnion ? EvaluatedPartialUnion<T> : T extends Types.TObject ? EvaluatedPartialObject<T> : T
-export namespace PartialEvaluator {
-  function Intersect(schema: Types.TIntersect) {
-    return Types.Type.Intersect(schema.allOf.map((inner) => Visit(inner)))
+export type ObjectMapFunction = (object: Types.TObject) => Types.TObject
+
+export namespace ObjectMap {
+  function Intersect(schema: Types.TIntersect, callback: ObjectMapFunction) {
+    return Types.Type.Intersect(schema.allOf.map((inner) => Visit(inner, callback)))
   }
-  function Union(schema: Types.TUnion) {
-    return Types.Type.Intersect(schema.anyOf.map((inner) => Visit(inner)))
+  function Union(schema: Types.TUnion, callback: ObjectMapFunction) {
+    return Types.Type.Union(schema.anyOf.map((inner) => Visit(inner, callback)))
   }
-  function Object(schema: Types.TObject) {
-    return Types.Type.Partial(schema)
+  function Object(schema: Types.TObject, callback: ObjectMapFunction) {
+    return callback(schema)
   }
-  function Visit(schema: Types.TSchema): Types.TSchema {
-    if (TypeGuard.TIntersect(schema)) return Intersect(schema)
-    if (TypeGuard.TUnion(schema)) return Union(schema)
-    if (TypeGuard.TObject(schema)) return Object(schema)
+  function Visit(schema: Types.TSchema, callback: ObjectMapFunction): Types.TSchema {
+    if (TypeGuard.TIntersect(schema)) return Intersect(schema, callback)
+    if (TypeGuard.TUnion(schema)) return Union(schema, callback)
+    if (TypeGuard.TObject(schema)) return Object(schema, callback)
     return schema
   }
-  export function Evaluate<T extends Types.TSchema>(schema: T): EvaluatedPartial<T> {
-    return Visit(schema) as EvaluatedPartial<T>
+  export function Map(schema: Types.TSchema, callback: ObjectMapFunction): Types.TSchema {
+    return Visit(ValueClone.Clone(schema), callback)
   }
 }
 
 // --------------------------------------------------------------------
-// EvaluatedRequired
+// EvaluatedPartial
 // --------------------------------------------------------------------
-export type EvaluatedRequiredIntersect<T extends Types.TIntersect> = { [K in keyof T['allOf']]: T['allOf'][K] extends Types.TSchema ? EvaluatedRequired<T['allOf'][K]> : never }
-export type EvaluatedRequiredUnion<T extends Types.TUnion> = { [K in keyof T['anyOf']]: T['anyOf'][K] extends Types.TSchema ? EvaluatedRequired<T['anyOf'][K]> : never }
-export type EvaluatedRequiredObject<T extends Types.TObject> = Types.TRequired<T>
-export type EvaluatedRequired<T extends Types.TSchema> = T extends Types.TIntersect ? EvaluatedRequiredIntersect<T> : T extends Types.TUnion ? EvaluatedRequiredUnion<T> : T extends Types.TObject ? EvaluatedRequiredObject<T> : T
-
-export namespace RequiredEvaluator {
-  function Intersect(schema: Types.TIntersect) {
-    return Types.Type.Intersect(schema.allOf.map((inner) => Visit(inner)))
+export namespace Evaluate {
+  export function Partial<T extends Types.TSchema>(schema: T): T {
+    return ObjectMap.Map(schema, (object) => Types.Type.Partial(object)) as T
   }
-  function Union(schema: Types.TUnion) {
-    return Types.Type.Union(schema.anyOf.map((inner) => Visit(inner)))
+  export function Required<T extends Types.TSchema>(schema: T): T {
+    return ObjectMap.Map(schema, (object) => Types.Type.Required(object)) as T
   }
-  function Object(schema: Types.TObject) {
-    return Types.Type.Required(schema)
+  export function Omit<T extends Types.TSchema>(schema: T, keys: string[]): T {
+    return ObjectMap.Map(schema, (object) => Types.Type.Omit(object, keys)) as T
   }
-  function Visit(schema: Types.TSchema): Types.TSchema {
-    if (TypeGuard.TIntersect(schema)) return Intersect(schema)
-    if (TypeGuard.TUnion(schema)) return Union(schema)
-    if (TypeGuard.TObject(schema)) return Object(schema)
-    return schema
+  export function Pick<T extends Types.TSchema>(schema: T, keys: string[]): T {
+    return ObjectMap.Map(schema, (object) => Types.Type.Pick(object, keys)) as T
   }
-  export function Evaluate<T extends Types.TSchema>(schema: T): EvaluatedRequired<T> {
-    return Visit(schema) as EvaluatedRequired<T>
+  export function KeyOf<T extends Types.TSchema>(schema: T, keys: string[]) {
+    const set = new Set<string>()
+    ObjectMap.Map(schema, (object) => {
+      const keys = globalThis.Object.keys(object.properties)
+      keys.forEach((key) => set.add(key))
+      return object
+    })
+    return Types.Type.Union([...set].map((key) => Types.Type.Literal(key)))
   }
 }

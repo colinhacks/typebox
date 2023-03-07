@@ -13,31 +13,40 @@
 // import { TypeGuard } from 'src/guard/guard'
 // import { Value } from '@sinclair/typebox/value'
 
-import { Type, Static, TypeGuard } from '@sinclair/typebox'
+import { Type, Static, TypeGuard, Evaluate } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
 import * as Types from '@sinclair/typebox'
 
+{
+  const T = Type.Union([Type.Object({ x: Type.Number() }), Type.Object({ x: Type.String() })])
+  const Y = Type.Object({
+    x: Type.Union([Type.Number(), Type.String()]),
+  })
+}
+{
+  const T = Type.Intersect([Type.Object({ x: Type.Number() }), Type.Object({ x: Type.String() })])
+  const Y = Type.Object({
+    x: Type.Never(),
+  })
+}
+{
+  const T = Type.Intersect([Type.Union([Type.Object({ x: Type.Number() }), Type.Object({ x: Type.String() })]), Type.Object({ x: Type.String() })])
+  const Y = Type.Object({
+    x: Type.Intersect([Type.Union([Type.Number(), Type.String()]), Type.String()]),
+  })
+}
 
+{
+  const T = Type.Union([Type.Union([Type.Object({ x: Type.Number() }), Type.Object({ x: Type.String() })]), Type.Object({ x: Type.String() })])
+  const Y = Type.Object({
+    x: Type.Union([Type.Number(), Type.String(), Type.String()]),
+  })
+}
 
+type TT = { x: number } | { x: number } | { z: number }
 
-const T = Type.Intersect([
-    Type.Union([
-        Type.Object({ x: Type.String() }),
-        Type.Object({ x: Type.String() })
-    ]),
-    Type.Intersect([
-        Type.Object({ x: Type.Number() }),
-        Type.Object({ x: Type.String() })
-    ])
-])
+type KK = keyof TT
 
+const T = Evaluate.KeyOf(Type.Union([Type.Object({ x: Type.Number() }), Type.Object({ y: Type.Number() }), Type.Object({ z: Type.Number() })]), ['a'])
 
-
-
-
-
-console.log(JSON.stringify(RequiredEvaluator.Evaluate(T), null, 2))
-
-
-
-
+console.log(T)
