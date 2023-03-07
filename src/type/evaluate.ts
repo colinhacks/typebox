@@ -30,52 +30,76 @@ import { ValueClone } from '../value/clone'
 import { TypeGuard } from './guard'
 import * as Types from './type'
 
-export type ObjectMapFunction = (object: Types.TObject) => Types.TObject
-
-export namespace ObjectMap {
-  function Intersect(schema: Types.TIntersect, callback: ObjectMapFunction) {
+// --------------------------------------------------------------------
+// TypeUtility
+// --------------------------------------------------------------------
+export namespace TypeUtility {
+  function Intersect(schema: Types.TIntersect, callback: (object: Types.TObject) => Types.TObject) {
     return Types.Type.Intersect(schema.allOf.map((inner) => Visit(inner, callback)))
   }
-  function Union(schema: Types.TUnion, callback: ObjectMapFunction) {
+  function Union(schema: Types.TUnion, callback: (object: Types.TObject) => Types.TObject) {
     return Types.Type.Union(schema.anyOf.map((inner) => Visit(inner, callback)))
   }
-  function Object(schema: Types.TObject, callback: ObjectMapFunction) {
+  function Object(schema: Types.TObject, callback: (object: Types.TObject) => Types.TObject) {
     return callback(schema)
   }
-  function Visit(schema: Types.TSchema, callback: ObjectMapFunction): Types.TSchema {
+  function Visit(schema: Types.TSchema, callback: (object: Types.TObject) => Types.TObject): Types.TSchema {
     if (TypeGuard.TIntersect(schema)) return Intersect(schema, callback)
     if (TypeGuard.TUnion(schema)) return Union(schema, callback)
     if (TypeGuard.TObject(schema)) return Object(schema, callback)
     return schema
   }
-  export function Map(schema: Types.TSchema, callback: ObjectMapFunction): Types.TSchema {
+  function Map(schema: Types.TSchema, callback: (object: Types.TObject) => Types.TObject): Types.TSchema {
     return Visit(ValueClone.Clone(schema), callback)
   }
-}
-
-// --------------------------------------------------------------------
-// EvaluatedPartial
-// --------------------------------------------------------------------
-export namespace Evaluate {
   export function Partial<T extends Types.TSchema>(schema: T): T {
-    return ObjectMap.Map(schema, (object) => Types.Type.Partial(object)) as T
+    return Map(schema, (object) => Types.Type.Partial(object)) as T
   }
   export function Required<T extends Types.TSchema>(schema: T): T {
-    return ObjectMap.Map(schema, (object) => Types.Type.Required(object)) as T
+    return Map(schema, (object) => Types.Type.Required(object)) as T
   }
   export function Omit<T extends Types.TSchema>(schema: T, keys: string[]): T {
-    return ObjectMap.Map(schema, (object) => Types.Type.Omit(object, keys)) as T
+    return Map(schema, (object) => Types.Type.Omit(object, keys)) as T
   }
   export function Pick<T extends Types.TSchema>(schema: T, keys: string[]): T {
-    return ObjectMap.Map(schema, (object) => Types.Type.Pick(object, keys)) as T
+    return Map(schema, (object) => Types.Type.Pick(object, keys)) as T
   }
-  export function KeyOf<T extends Types.TSchema>(schema: T, keys: string[]) {
-    const set = new Set<string>()
-    ObjectMap.Map(schema, (object) => {
-      const keys = globalThis.Object.keys(object.properties)
-      keys.forEach((key) => set.add(key))
-      return object
-    })
-    return Types.Type.Union([...set].map((key) => Types.Type.Literal(key)))
+}
+// --------------------------------------------------------------------
+// KeyOf
+// --------------------------------------------------------------------
+export namespace KeyOf {
+  function Intersect(schema: Types.TIntersect) {
+    const result = new Set<string>()
+    for (const inner of schema.allOf) {
+      for (const key of Visit(inner)) {
+        result.add(key)
+      }
+    }
+    return [...result]
+  }
+  function Union(schema: Types.TUnion) {
+    const sets = schema.anyOf.map((inner) => Visit(inner))
+    const result = new Set<string>()
+    for (const set of sets) {
+      for (const key of set) {
+        if (!sets.every((set) => set.includes(key))) continue
+        result.add(key)
+      }
+    }
+    return [...result]
+  }
+  function Object(schema: Types.TObject) {
+    return globalThis.Object.keys(schema.properties)
+  }
+  function Visit(schema: Types.TSchema): string[] {
+    if (TypeGuard.TIntersect(schema)) return Intersect(schema)
+    if (TypeGuard.TUnion(schema)) return Union(schema)
+    if (TypeGuard.TObject(schema)) return Object(schema)
+    return []
+  }
+  export function Evaluate(schema: Types.TSchema) {
+    const keys = Visit(schema)
+    return Types.Type.Union(keys.map((key) => Types.Type.Literal(key)))
   }
 }
