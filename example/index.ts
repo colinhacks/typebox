@@ -13,46 +13,37 @@
 // import { TypeGuard } from 'src/guard/guard'
 // import { Value } from '@sinclair/typebox/value'
 
-import { Type, Static, TypeGuard, KeyResolver } from '@sinclair/typebox'
+import { Type, Static, TypeGuard, TypeExtends, TypeExtendsResult } from '@sinclair/typebox'
 import * as Types from '@sinclair/typebox'
 
-// --------------------------------------------------------------------
-// TypeResolver
-// --------------------------------------------------------------------
-export namespace TypeResolver {
-  function Intersect(schema: Types.TIntersect) {
-    return [...schema.allOf.reduce((set, schema) => Visit(schema).map((key) => set.add(key))[0], new Set<string>())]
-  }
-  function Union(schema: Types.TUnion) {
-    const sets = schema.anyOf.map((inner) => Visit(inner))
-    return [...sets.reduce((set, outer) => outer.map((key) => (sets.every((inner) => inner.includes(key)) ? set.add(key) : set))[0], new Set<string>())]
-  }
-  function Object(schema: Types.TObject) {
-    return globalThis.Object.keys(schema.properties)
-  }
-  function Visit(schema: Types.TSchema): string[] {
-    if (TypeGuard.TIntersect(schema)) return Intersect(schema)
-    if (TypeGuard.TUnion(schema)) return Union(schema)
-    if (TypeGuard.TObject(schema)) return Object(schema)
-    return []
-  }
-  export function Resolve<T extends Types.TSchema>(schema: T) {
-    return Visit(schema)
-  }
-}
+// -------------------------------------------------------------
+// Symbol
+// -------------------------------------------------------------
+type T1 = symbol extends unknown ? true : false // true
+type T2 = symbol extends any ? true : false // true
+type T3 = string extends never ? true : false // false
+type T4 = symbol extends string ? true : false // false
+type T5 = symbol extends boolean ? true : false // false
+type T6 = symbol extends number ? true : false // false
+type T7 = symbol extends {} ? true : false // true
+type T8 = symbol extends [] ? true : false // false
 
-const T = Type.Union([
-  Type.Object({
-    x: Type.Number(),
-    y: Type.Number()
-  }),
-  Type.Object({
-    x: Type.Number(),
-    y: Type.Number()
-  })
-])
+type S1 = unknown extends symbol ? true : false // false
+type S2 = any extends symbol ? true : false // union
+type S3 = never extends symbol ? true : false // true
+type S4 = string extends symbol ? true : false // false
+type S5 = boolean extends symbol ? true : false // false
+type S6 = number extends symbol ? true : false // false
+type S7 = {} extends symbol ? true : false // false
+type S8 = [] extends symbol ? true : false // false
 
-const K = Type.KeyOf(T)
+const R = TypeExtends.Extends(Type.Array(Type.Number()), Type.Symbol(undefined))
 
-console.log(K)
+type X = symbol extends { description: string | undefined } ? true : false
 
+const AASD = Symbol()
+AASD.description
+
+type AA = keyof symbol
+
+console.log(TypeExtendsResult[R])

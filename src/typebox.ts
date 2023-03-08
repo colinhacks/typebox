@@ -1292,7 +1292,7 @@ export namespace TypeExtends {
   // Never
   // ------------------------------------------------------------------------------------------
   function NeverRight(left: TSchema, right: TNever) {
-    return TypeExtendsResult.True
+    return TypeExtendsResult.False
   }
   function Never(left: TNever, right: TSchema) {
     return TypeExtendsResult.True
@@ -1337,6 +1337,18 @@ export namespace TypeExtends {
   function IsObjectStringLike(schema: TObject) {
     return IsObjectArrayLike(schema)
   }
+  function IsObjectSymbolLike(schema: TObject) {
+    // prettier-ignore
+    return IsObjectPropertyCount(schema, 0) || (
+      IsObjectPropertyCount(schema, 1) && 'description' in schema.properties && TypeGuard.TUnion(schema.properties.description) && schema.properties.description.anyOf.length === 2 && ((
+        TypeGuard.TString(schema.properties.description.anyOf[0]) &&
+        TypeGuard.TUndefined(schema.properties.description.anyOf[1])
+      ) || (
+        TypeGuard.TString(schema.properties.description.anyOf[1]) &&
+        TypeGuard.TUndefined(schema.properties.description.anyOf[0])
+      ))
+    )
+  }
   function IsObjectNumberLike(schema: TObject) {
     return IsObjectPropertyCount(schema, 0)
   }
@@ -1380,6 +1392,7 @@ export namespace TypeExtends {
     if (TypeGuard.TLiteral(left) && IsLiteralNumber(left) && IsObjectNumberLike(right)) return TypeExtendsResult.True
     if (TypeGuard.TLiteral(left) && IsLiteralBoolean(left) && IsObjectBooleanLike(right)) return TypeExtendsResult.True
     if (TypeGuard.TString(left) && IsObjectStringLike(right)) return TypeExtendsResult.True
+    if (TypeGuard.TSymbol(left) && IsObjectSymbolLike(right)) return TypeExtendsResult.True
     if (TypeGuard.TNumber(left) && IsObjectNumberLike(right)) return TypeExtendsResult.True
     if (TypeGuard.TInteger(left) && IsObjectNumberLike(right)) return TypeExtendsResult.True
     if (TypeGuard.TBoolean(left) && IsObjectBooleanLike(right)) return TypeExtendsResult.True
@@ -1480,6 +1493,19 @@ export namespace TypeExtends {
     if (TypeGuard.TObject(right)) return ObjectRight(left, right)
     if (TypeGuard.TRecord(right)) return RecordRight(left, right)
     return TypeGuard.TString(right) ? TypeExtendsResult.True : TypeExtendsResult.False
+  }
+  // ------------------------------------------------------------------------------------------
+  // Symbol
+  // ------------------------------------------------------------------------------------------
+  function Symbol(left: TSymbol, right: TSchema): TypeExtendsResult {
+    if (TypeGuard.TIntersect(right)) return IntersectRight(left, right)
+    if (TypeGuard.TUnion(right)) return UnionRight(left, right)
+    if (TypeGuard.TNever(right)) return NeverRight(left, right)
+    if (TypeGuard.TUnknown(right)) return UnknownRight(left, right)
+    if (TypeGuard.TAny(right)) return AnyRight(left, right)
+    if (TypeGuard.TObject(right)) return ObjectRight(left, right)
+    if (TypeGuard.TRecord(right)) return RecordRight(left, right)
+    return TypeGuard.TSymbol(right) ? TypeExtendsResult.True : TypeExtendsResult.False
   }
   // ------------------------------------------------------------------------------------------
   // Tuple
@@ -1590,6 +1616,7 @@ export namespace TypeExtends {
     if (TypeGuard.TNumber(left)) return Number(left, right)
     if (TypeGuard.TRecord(left)) return Record(left, resolvedRight)
     if (TypeGuard.TString(left)) return String(left, right)
+    if (TypeGuard.TSymbol(left)) return Symbol(left, right)
     if (TypeGuard.TObject(left)) return Object(left, resolvedRight)
     if (TypeGuard.TTuple(left)) return Tuple(left, resolvedRight)
     if (TypeGuard.TPromise(left)) return Promise(left, resolvedRight)

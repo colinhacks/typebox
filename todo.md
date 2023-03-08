@@ -2,6 +2,10 @@
 - [ ] Consider checking `void` as `undefined`.
 - [ ] Add symbol to extends checks
 
+### Symbol
+
+- [ ] Add tests
+
 ### Pick / Omit 
 - [ ] Re-enable these to be picked from Union<Literal[]>
 
