@@ -13,18 +13,24 @@
 // import { TypeGuard } from 'src/guard/guard'
 // import { Value } from '@sinclair/typebox/value'
 
-import { Type, Static, TypeGuard, TypeUtility, KeyOf, TPromise } from '@sinclair/typebox'
+import { Type, Static, TypeGuard, TypeUtility, KeyOfUtility, TPromise } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
 import * as Types from '@sinclair/typebox'
 
 const T = Type.Intersect([
   Type.Object({
-    x: Type.Readonly(Type.Number()),
+    x: Type.Number(),
     y: Type.Number(),
     z: Type.Number(),
   }),
+  Type.Object({
+    a: Type.Number(),
+    b: Type.Number(),
+    c: Type.Number(),
+  }),
+  Type.String(),
 ])
 
-const O = TypeUtility.Partial(T)
+const K = KeyOfUtility.Evaluate(T)
 
-type T = Static<typeof O>
+console.log(K)
