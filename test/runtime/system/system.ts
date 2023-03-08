@@ -32,10 +32,10 @@ describe('system/TypeSystem/AllowNaN', () => {
 
 describe('system/TypeSystem/AllowArrayObjects', () => {
   before(() => {
-    TypeSystem.AllowArrayObjects = true
+    TypeSystem.AllowArrayAsObject = true
   })
   after(() => {
-    TypeSystem.AllowArrayObjects = false
+    TypeSystem.AllowArrayAsObject = false
   })
   // ---------------------------------------------------------------
   // Object

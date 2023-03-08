@@ -175,7 +175,7 @@ export namespace ValueCheck {
   }
 
   function Object(schema: Types.TObject, references: Types.TSchema[], value: any): boolean {
-    if (TypeSystem.AllowArrayObjects) {
+    if (TypeSystem.AllowArrayAsObject) {
       if (!(typeof value === 'object' && value !== null)) {
         return false
       }
@@ -237,7 +237,7 @@ export namespace ValueCheck {
   }
 
   function Record(schema: Types.TRecord<any, any>, references: Types.TSchema[], value: any): boolean {
-    if (TypeSystem.AllowArrayObjects) {
+    if (TypeSystem.AllowArrayAsObject) {
       if (!(typeof value === 'object' && value !== null && !(value instanceof globalThis.Date))) {
         return false
       }

@@ -211,7 +211,7 @@ export namespace TypeCompiler {
     if (IsNumber(schema.maximum)) yield `${value} <= ${schema.maximum}`
   }
   function* Object(schema: Types.TObject, value: string): IterableIterator<string> {
-    if (TypeSystem.AllowArrayObjects) {
+    if (TypeSystem.AllowArrayAsObject) {
       yield `(typeof ${value} === 'object' && ${value} !== null)`
     } else {
       yield `(typeof ${value} === 'object' && ${value} !== null && !Array.isArray(${value}))`
@@ -254,7 +254,7 @@ export namespace TypeCompiler {
     yield `(typeof value === 'object' && typeof ${value}.then === 'function')`
   }
   function* Record(schema: Types.TRecord<any, any>, value: string): IterableIterator<string> {
-    if (TypeSystem.AllowArrayObjects) {
+    if (TypeSystem.AllowArrayAsObject) {
       yield `(typeof ${value} === 'object' && ${value} !== null && !(${value} instanceof Date))`
     } else {
       yield `(typeof ${value} === 'object' && ${value} !== null && !(${value} instanceof Date) && !Array.isArray(${value}))`

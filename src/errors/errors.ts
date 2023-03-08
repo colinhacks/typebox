@@ -260,7 +260,7 @@ export namespace ValueErrors {
   }
 
   function* Object(schema: Types.TObject, references: Types.TSchema[], path: string, value: any): IterableIterator<ValueError> {
-    if (TypeSystem.AllowArrayObjects) {
+    if (TypeSystem.AllowArrayAsObject) {
       if (!(typeof value === 'object' && value !== null)) {
         return yield { type: ValueErrorType.Object, schema, path, value, message: `Expected object` }
       }
@@ -318,7 +318,7 @@ export namespace ValueErrors {
   }
 
   function* Record(schema: Types.TRecord, references: Types.TSchema[], path: string, value: any): IterableIterator<ValueError> {
-    if (TypeSystem.AllowArrayObjects) {
+    if (TypeSystem.AllowArrayAsObject) {
       if (!(typeof value === 'object' && value !== null && !(value instanceof globalThis.Date))) {
         return yield { type: ValueErrorType.Object, schema, path, value, message: `Expected object` }
       }

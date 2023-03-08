@@ -13,31 +13,21 @@
 // import { TypeGuard } from 'src/guard/guard'
 // import { Value } from '@sinclair/typebox/value'
 
+import { TypeSystem } from '@sinclair/typebox/system'
+import { TypeCompiler } from '@sinclair/typebox/compiler'
 import { Type, Static, TypeGuard, TypeExtends, TypeExtendsResult } from '@sinclair/typebox'
 import * as Types from '@sinclair/typebox'
 
-const T = Type.Object({
-  x: Type.Number(),
-  y: Type.Number(),
-  z: Type.Number(),
+TypeSystem.AllowArrayAsObject
+const A = Type.Object({
+  x: Type.Union([Type.Undefined(), Type.String()]),
 })
+const B = Type.Object({
+  y: Type.String(),
+})
+const T = Type.Intersect([A, Type.Partial(B)])
 
-const N = Type.Recursive(
-  (Node) =>
-    Type.Partial(
-      Type.Intersect([
-        T,
-        Type.Object({
-          id: Type.String(),
-          nodes: Type.Array(Node),
-        }),
-      ]),
-    ),
-  {
-    $id: 'Node',
-  },
-)
+const C = TypeCompiler.Compile(T)
 
-console.log(JSON.stringify(N, null, 2))
-
-function test(value: Static<typeof N>) {}
+console.log(C.Code())
+console.log(C.Check({ x: '1', y: 1 }))
