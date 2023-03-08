@@ -34,25 +34,24 @@ import { TypeNormal } from './normal'
 // --------------------------------------------------------------------------
 // Symbols
 // --------------------------------------------------------------------------
-
 export const Kind = Symbol.for('TypeBox.Kind')
 export const Hint = Symbol.for('TypeBox.Hint')
 export const Modifier = Symbol.for('TypeBox.Modifier')
 
-// --------------------------------------------------------------------------
-// Utils
-// --------------------------------------------------------------------------
-
+// -------------------------------------------------------------------------------------
+// Helpers
+// -------------------------------------------------------------------------------------
 export type TupleToIntersect<T extends any[]> = T extends [infer I] ? I : T extends [infer I, ...infer R] ? I & TupleToIntersect<R> : never
 export type TupleToUnion<T extends any[]> = { [K in keyof T]: T[K] }[number]
 export type UnionToIntersect<U> = (U extends unknown ? (arg: U) => 0 : never) extends (arg: infer I) => 0 ? I : never
 export type UnionLast<U> = UnionToIntersect<U extends unknown ? (x: U) => 0 : never> extends (x: infer L) => 0 ? L : never
 export type UnionToTuple<U, L = UnionLast<U>> = [U] extends [never] ? [] : [...UnionToTuple<Exclude<U, L>>, L]
+export type Evaluate<T> = T extends infer O ? { [K in keyof O]: O[K] } : never
+export type Assert<T, E> = T extends E ? T : never
 
 // --------------------------------------------------------------------------
 // Modifiers
 // --------------------------------------------------------------------------
-
 export type TModifier = TReadonlyOptional<TSchema> | TOptional<TSchema> | TReadonly<TSchema>
 export type TReadonly<T extends TSchema> = T & { [Modifier]: 'Readonly' }
 export type TOptional<T extends TSchema> = T & { [Modifier]: 'Optional' }
@@ -61,7 +60,6 @@ export type TReadonlyOptional<T extends TSchema> = T & { [Modifier]: 'ReadonlyOp
 // --------------------------------------------------------------------------
 // Schema
 // --------------------------------------------------------------------------
-
 export interface SchemaOptions {
   $schema?: string
   /** Id for this schema */
@@ -172,11 +170,8 @@ export interface TBoolean extends TSchema {
 // --------------------------------------------------------------------------
 
 export type TConstructorParameters<T extends TConstructor<TSchema[], TSchema>> = TTuple<T['parameters']>
-
 export type TInstanceType<T extends TConstructor<TSchema[], TSchema>> = T['returns']
-
 export type StaticContructorParameters<T extends readonly TSchema[], P extends unknown[]> = [...{ [K in keyof T]: T[K] extends TSchema ? Static<T[K], P> : never }]
-
 export interface TConstructor<T extends TSchema[] = TSchema[], U extends TSchema = TSchema> extends TSchema {
   [Kind]: 'Constructor'
   static: new (...param: StaticContructorParameters<T, this['params']>) => Static<U, this['params']>
@@ -189,7 +184,6 @@ export interface TConstructor<T extends TSchema[] = TSchema[], U extends TSchema
 // --------------------------------------------------------------------------
 // Date
 // --------------------------------------------------------------------------
-
 export interface DateOptions extends SchemaOptions {
   exclusiveMaximumTimestamp?: number
   exclusiveMinimumTimestamp?: number
@@ -207,7 +201,6 @@ export interface TDate extends TSchema, DateOptions {
 // --------------------------------------------------------------------------
 // Enum
 // --------------------------------------------------------------------------
-
 export interface TEnumOption<T> {
   type: 'number' | 'string'
   const: T
@@ -227,7 +220,6 @@ export type TExtends<L extends TSchema, R extends TSchema, T extends TSchema, U 
 // ------------------------------------------------------------------------
 // Exclude
 // ------------------------------------------------------------------------
-
 export interface TExclude<T extends TUnion, U extends TUnion> extends TUnion<any[]> {
   static: Exclude<Static<T, this['params']>, Static<U, this['params']>>
 }
@@ -235,7 +227,6 @@ export interface TExclude<T extends TUnion, U extends TUnion> extends TUnion<any
 // ------------------------------------------------------------------------
 // Extract
 // ------------------------------------------------------------------------
-
 export interface TExtract<T extends TSchema, U extends TUnion> extends TUnion<any[]> {
   static: Extract<Static<T, this['params']>, Static<U, this['params']>>
 }
@@ -243,16 +234,12 @@ export interface TExtract<T extends TSchema, U extends TUnion> extends TUnion<an
 // --------------------------------------------------------------------------
 // Function
 // --------------------------------------------------------------------------
-
 export type TParameters<T extends TFunction> = TTuple<T['parameters']>
-
 export type TReturnType<T extends TFunction> = T['returns']
-
-export type StaticFunctionParameters<T extends readonly TSchema[], P extends unknown[]> = [...{ [K in keyof T]: T[K] extends TSchema ? Static<T[K], P> : never }]
-
+export type TFunctionParameters<T extends readonly TSchema[], P extends unknown[]> = [...{ [K in keyof T]: T[K] extends TSchema ? Static<T[K], P> : never }]
 export interface TFunction<T extends readonly TSchema[] = TSchema[], U extends TSchema = TSchema> extends TSchema {
   [Kind]: 'Function'
-  static: (...param: StaticFunctionParameters<T, this['params']>) => Static<U, this['params']>
+  static: (...param: TFunctionParameters<T, this['params']>) => Static<U, this['params']>
   type: 'object'
   instanceOf: 'Function'
   parameters: T
@@ -294,15 +281,21 @@ export interface TIntersect<T extends TSchema[] = TSchema[]> extends TSchema, In
   allOf: [...T]
 }
 
-// --------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 // KeyOf
-// --------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// prettier-ignore
+export type TKeyOfTuple<T extends TSchema> = { 
+  [K in keyof Static<T>]: TLiteral<Assert<K, TLiteralValue>> 
+} extends infer U ? UnionToTuple<{ [K in keyof U]: U[K] }[keyof U]> : never
 
-export type TKeyOf<T extends TObject> = UnionToTuple<T extends TObject<infer Properties> ? { [K in keyof Properties]: K extends TLiteralValue ? TLiteral<K> : never }[keyof Properties] : never> extends infer L
-  ? L extends TLiteral[]
-    ? TUnion<L>
-    : never
-  : never
+// prettier-ignore
+export type TKeyOf<T extends TSchema> = (
+  T extends TIntersect ? TKeyOfTuple<T> :
+  T extends TUnion     ? TKeyOfTuple<T> :
+  T extends TObject    ? TKeyOfTuple<T> :
+  []
+) extends infer R ? R extends [] ? TNever : TUnion<Assert<R, TSchema[]>> : never
 
 // --------------------------------------------------------------------------
 // Literal
@@ -405,33 +398,52 @@ export interface TObject<T extends TProperties = TProperties> extends TSchema, O
   required?: string[]
 }
 
-// -------------------------------------------------------------------
+// -------------------------------------------------------------------------------------
 // Omit
-// -------------------------------------------------------------------
-export type TOmit<T extends TObject, K extends keyof any> = TPick<T, Exclude<keyof T['properties'], K>>
+// -------------------------------------------------------------------------------------
+export type TOmitArray<T extends TSchema[], K extends keyof any> = Assert<{ [K2 in keyof T]: TOmit<T[K2], K> }, TSchema[]>
+export type TOmitProperties<T extends TProperties, K extends keyof any> = Evaluate<Assert<Omit<T, K>, TProperties>>
+
+// prettier-ignore
+export type TOmit<T extends TSchema, K extends keyof any> = 
+  T extends TIntersect<infer S> ? TIntersect<TOmitArray<S, K>> : 
+  T extends TUnion<infer S> ? TUnion<TOmitArray<S, K>> : 
+  T extends TObject<infer S> ? TObject<TOmitProperties<S, K>> : 
+  T
 
 // --------------------------------------------------------------------------
 // Partial
 // --------------------------------------------------------------------------
+export type TPartialArray<T extends TSchema[]> = Assert<{ [K in keyof T]: TPartial<T[K]> }, TSchema[]>
 
 // prettier-ignore
-export type TPartial<T extends TObject> = TObject<{
-  [K in keyof T['properties']]:
-  T['properties'][K] extends TReadonlyOptional<infer U> ? TReadonlyOptional<U> :
-  T['properties'][K] extends TReadonly<infer U> ? TReadonlyOptional<U> :
-  T['properties'][K] extends TOptional<infer U> ? TOptional<U> :
-  TOptional<T['properties'][K]>
-}> extends TObject<infer Properties> ? TObject<Properties> : never
+export type TPartialProperties<T extends TProperties> = Evaluate<Assert<{
+  [K in keyof T]: 
+    T[K] extends TReadonlyOptional<infer U> ? TReadonlyOptional<U> : 
+    T[K] extends TReadonly<infer U>         ? TReadonlyOptional<U> : 
+    T[K] extends TOptional<infer U>         ? TOptional<U>         : 
+    TOptional<T[K]>
+}, TProperties>>
 
-// --------------------------------------------------------------------------
+// prettier-ignore
+export type TPartial<T extends TSchema> = 
+  T extends TIntersect<infer S> ? TIntersect<TPartialArray<S>> : 
+  T extends TUnion<infer S>     ? TUnion<TPartialArray<S>> : 
+  T extends TObject<infer S>    ? TObject<TPartialProperties<S>> : 
+  T
+
+// -------------------------------------------------------------------------------------
 // Pick
-// --------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------
+export type TPickArray<T extends TSchema[], K extends keyof any> = Assert<{ [K2 in keyof T]: TPick<T[K2], K> }, TSchema[]>
+export type TPickProperties<T extends TProperties, K extends keyof any> = Evaluate<Assert<Pick<T, K>, TProperties>>
 
-export type TPick<T extends TObject, K extends keyof any> = TObject<{
-  [IK in K]: IK extends keyof T['properties'] ? T['properties'][IK] : never
-}> extends TObject<infer Properties>
-  ? TObject<Properties>
-  : never
+// prettier-ignore
+export type TPick<T extends TSchema, K extends keyof any> = 
+  T extends TIntersect<infer S> ? TIntersect<TPickArray<S, K>> : 
+  T extends TUnion<infer S>     ? TUnion<TPickArray<S, K>> : 
+  T extends TObject<infer S>    ? TObject<TPickProperties<S, K>> : 
+  T
 
 // --------------------------------------------------------------------------
 // Promise
@@ -485,18 +497,26 @@ export interface TRef<T extends TSchema = TSchema> extends TSchema {
   $ref: string
 }
 
-// --------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 // Required
-// --------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+export type TRequiredArray<T extends TSchema[]> = Assert<{ [K in keyof T]: TRequired<T[K]> }, TSchema[]>
 
 // prettier-ignore
-export type TRequired<T extends TObject> = TObject<{
-  [K in keyof T['properties']]:
-  T['properties'][K] extends TReadonlyOptional<infer U> ? TReadonly<U> :
-  T['properties'][K] extends TReadonly<infer U> ? TReadonly<U> :
-  T['properties'][K] extends TOptional<infer U> ? U :
-  T['properties'][K]
-}> extends TObject<infer Properties> ? TObject<Properties> : never
+export type TRequiredProperties<T extends TProperties> = Evaluate<Assert<{
+  [K in keyof T]: 
+    T[K] extends TReadonlyOptional<infer U> ? TReadonly<U> : 
+    T[K] extends TReadonly<infer U>         ? TReadonly<U> :  
+    T[K] extends TOptional<infer U>         ? U : 
+    T[K]
+}, TProperties>>
+
+// prettier-ignore
+export type TRequired<T extends TSchema> = 
+  T extends TIntersect<infer S> ? TIntersect<TRequiredArray<S>> : 
+  T extends TUnion<infer S>     ? TUnion<TRequiredArray<S>> : 
+  T extends TObject<infer S>    ? TObject<TRequiredProperties<S>> : 
+  T
 
 // --------------------------------------------------------------------------
 // String
@@ -641,6 +661,61 @@ export interface TVoid extends TSchema {
 /** Creates a static type from a TypeBox type */
 export type Static<T extends TSchema, P extends unknown[] = []> = (T & { params: P })['static']
 
+// --------------------------------------------------------------------
+// ObjectMap
+// --------------------------------------------------------------------
+export namespace ObjectMap {
+  function Intersect(schema: TIntersect, callback: (object: TObject) => TObject) {
+    return Type.Intersect(
+      schema.allOf.map((inner) => Visit(inner, callback)),
+      { ...schema },
+    )
+  }
+  function Union(schema: TUnion, callback: (object: TObject) => TObject) {
+    return Type.Union(
+      schema.anyOf.map((inner) => Visit(inner, callback)),
+      { ...schema },
+    )
+  }
+  function Object(schema: TObject, callback: (object: TObject) => TObject) {
+    return callback(schema)
+  }
+  function Visit(schema: TSchema, callback: (object: TObject) => TObject): TSchema {
+    if (TypeGuard.TIntersect(schema)) return Intersect(schema, callback)
+    if (TypeGuard.TUnion(schema)) return Union(schema, callback)
+    if (TypeGuard.TObject(schema)) return Object(schema, callback)
+    return schema
+  }
+  export function Map<T = TSchema>(schema: TSchema, callback: (object: TObject) => TObject, options: SchemaOptions = {}): T {
+    return { ...Visit(ValueClone.Clone(schema), callback), ...options } as T
+  }
+}
+
+// --------------------------------------------------------------------
+// KeyResolver
+// --------------------------------------------------------------------
+export namespace KeyResolver {
+  function Intersect(schema: TIntersect) {
+    return [...schema.allOf.reduce((set, schema) => Visit(schema).map((key) => set.add(key))[0], new Set<string>())]
+  }
+  function Union(schema: TUnion) {
+    const sets = schema.anyOf.map((inner) => Visit(inner))
+    return [...sets.reduce((set, outer) => outer.map((key) => (sets.every((inner) => inner.includes(key)) ? set.add(key) : set))[0], new Set<string>())]
+  }
+  function Object(schema: TObject) {
+    return globalThis.Object.keys(schema.properties)
+  }
+  function Visit(schema: TSchema): string[] {
+    if (TypeGuard.TIntersect(schema)) return Intersect(schema)
+    if (TypeGuard.TUnion(schema)) return Union(schema)
+    if (TypeGuard.TObject(schema)) return Object(schema)
+    return []
+  }
+  export function Resolve<T extends TSchema>(schema: T) {
+    return Visit(schema)
+  }
+}
+
 // --------------------------------------------------------------------------
 // TypeBuilder
 // --------------------------------------------------------------------------
@@ -720,7 +795,7 @@ export namespace Type {
       .filter((key) => isNaN(key as any))
       .map((key) => item[key]) as T[keyof T][]
     const anyOf = values.map((value) => (typeof value === 'string' ? { [Kind]: 'Literal', type: 'string' as const, const: value } : { [Kind]: 'Literal', type: 'number' as const, const: value }))
-    return Create({ ...options, [Kind]: 'Union', [Hint]: 'Enum', anyOf })
+    return Create({ ...options, [Kind]: 'Union', anyOf })
   }
 
   /** `Standard` Creates a conditional type expression  */
@@ -791,10 +866,16 @@ export namespace Type {
   }
 
   /** `Standard` Creates a keyof type */
-  export function KeyOf<T extends TObject>(schema: T, options: SchemaOptions = {}): TKeyOf<T> {
-    const normal = schema
-    const anyOf: TLiteral<TLiteralValue>[] = globalThis.Object.keys(normal.properties).map((key) => Create({ ...options, [Kind]: 'Literal', type: 'string', const: key }))
-    return Create({ ...options, [Kind]: 'Union', [Hint]: 'KeyOf', anyOf } as TKeyOf<T>)
+  export function KeyOf<T extends TSchema>(schema: T, options: SchemaOptions = {}): TKeyOf<T> {
+    const keys = KeyResolver.Resolve(schema)
+    const keyof =
+      keys.length === 0
+        ? Never(options)
+        : Union(
+            keys.map((key) => Literal(key)),
+            options,
+          )
+    return keyof as TKeyOf<T>
   }
 
   /** `Standard` Creates a literal type */
@@ -820,16 +901,7 @@ export namespace Type {
   }
 
   /** `Standard` Creates a not type */
-  export function Not<N extends TSchema, T extends TSchema>(not: N, schema: T, options?: SchemaOptions): TNot<N, T>
-  /** `Standard` Creates a not type */
-  export function Not<N extends TSchema, T extends TSchema>(not: N, options?: SchemaOptions): TNot<N, TUnknown>
-  export function Not(...args: any[]): any {
-    // prettier-ignore
-    const [not, schema, options] =
-      (args.length === 3) ? [args[0], args[1], args[2]] :
-        (args.length === 2) ? ((Kind in args[1]) ? [args[0], args[1], {}] : [args[0], { [Kind]: 'Unknown' }, args[1]]) :
-          (args.length === 1) ? [args[0], { [Kind]: 'Unknown' }, {}] :
-            [{ [Kind]: 'Unknown' }, { [Kind]: 'Unknown' }, {}]
+  export function Not<N extends TSchema, T extends TSchema>(not: N, schema: T, options?: SchemaOptions): TNot<N, T> {
     return Create({ ...options, [Kind]: 'Not', allOf: [{ not }, schema] })
   }
 
@@ -860,24 +932,19 @@ export namespace Type {
   }
 
   /** `Standard` Creates a new object type whose keys are omitted from the given source type */
-  export function Omit<T extends TObject, K extends ObjectPropertyKeys<T>[]>(schema: T, keys: readonly [...K], options?: ObjectOptions): TOmit<T, K[number]>
-
-  /** `Standard` Creates a new object type whose keys are omitted from the given source type */
-  export function Omit<T extends TObject, K extends TUnion<TLiteral<string>[]>>(schema: T, keys: K, options?: ObjectOptions): TOmit<T, Static<K>>
-
-  /** `Standard` Creates a new object type whose keys are omitted from the given source type */
-  export function Omit(schema: any, keys: any, options: ObjectOptions = {}) {
-    const normal = schema
-    const select: readonly string[] = keys[Kind] === 'Union' ? keys.anyOf.map((schema: TLiteral) => schema.const) : keys
-    const object = { ...ValueClone.Clone(normal), ...options, [Hint]: 'Omit' }
-    if (object.required) {
-      object.required = object.required.filter((key: string) => !select.includes(key as any))
-      if (object.required.length === 0) delete object.required
-    }
-    for (const key of globalThis.Object.keys(object.properties)) {
-      if (select.includes(key as any)) delete object.properties[key]
-    }
-    return Create(object)
+  export function Omit<T extends TSchema, K extends (keyof Static<T>)[]>(schema: T, keys: readonly [...K], options: SchemaOptions = {}): TOmit<T, K[number]> {
+    // prettier-ignore
+    return ObjectMap.Map<TOmit<T, K[number]>>(schema, (schema) => {
+      const object = { ...ValueClone.Clone(schema), ...options }
+      if (object.required) {
+        object.required = object.required.filter((key: string) => !keys.includes(key as any))
+        if (object.required.length === 0) delete object.required
+      }
+      for (const key of globalThis.Object.keys(object.properties)) {
+        if (keys.includes(key as any)) delete object.properties[key]
+      }
+      return Create(object)
+    }, options)
   }
 
   /** `Extended` Creates a tuple type from this functions parameters */
@@ -886,50 +953,39 @@ export namespace Type {
   }
 
   /** `Standard` Creates an object type whose properties are all optional */
-  export function Partial<T extends TObject>(schema: T, options: ObjectOptions = {}): TPartial<T> {
-    const normal = schema
-    const next = { ...ValueClone.Clone(normal), ...options, [Hint]: 'Partial' }
-    delete next.required
-    for (const key of globalThis.Object.keys(next.properties)) {
-      const property = next.properties[key]
-      const modifer = property[Modifier]
-      switch (modifer) {
-        case 'ReadonlyOptional':
-          property[Modifier] = 'ReadonlyOptional'
-          break
-        case 'Readonly':
-          property[Modifier] = 'ReadonlyOptional'
-          break
-        case 'Optional':
-          property[Modifier] = 'Optional'
-          break
-        default:
-          property[Modifier] = 'Optional'
-          break
+  export function Partial<T extends TSchema>(schema: T, options: ObjectOptions = {}): TPartial<T> {
+    // prettier-ignore
+    return ObjectMap.Map<TPartial<T>>(schema, (schema) => {
+      const next = ValueClone.Clone(schema)
+      delete next.required
+      for (const key of globalThis.Object.keys(next.properties)) {
+        const property = next.properties[key]
+        // prettier-ignore
+        switch (property[Modifier]) {
+          case 'ReadonlyOptional': property[Modifier] = 'ReadonlyOptional'; break;
+          case 'Readonly': property[Modifier] = 'ReadonlyOptional'; break;
+          case 'Optional': property[Modifier] = 'Optional'; break;
+          default: property[Modifier] = 'Optional'; break;
+        }
       }
-    }
-    return Create(next)
+      return Create(next)
+    }, options)
   }
 
   /** `Standard` Creates a new object type whose keys are picked from the given source type */
-  export function Pick<T extends TObject, K extends ObjectPropertyKeys<T>[]>(schema: T, keys: readonly [...K], options?: ObjectOptions): TPick<T, K[number]>
-
-  /** `Standard` Creates a new object type whose keys are picked from the given source type */
-  export function Pick<T extends TObject, K extends TUnion<TLiteral<string>[]>>(schema: T, keys: K, options?: ObjectOptions): TPick<T, Static<K>>
-
-  /** `Standard` Creates a new object type whose keys are picked from the given source type */
-  export function Pick(schema: any, keys: any, options: ObjectOptions = {}) {
-    const normal = schema
-    const select: readonly string[] = keys[Kind] === 'Union' ? keys.anyOf.map((schema: TLiteral) => schema.const) : keys
-    const object = { ...ValueClone.Clone(normal), ...options, [Hint]: 'Pick' }
-    if (object.required) {
-      object.required = object.required.filter((key: any) => select.includes(key))
-      if (object.required.length === 0) delete object.required
-    }
-    for (const key of globalThis.Object.keys(object.properties)) {
-      if (!select.includes(key as any)) delete object.properties[key]
-    }
-    return Create(object)
+  export function Pick<T extends TSchema, K extends (keyof Static<T>)[]>(schema: T, keys: readonly [...K], options: SchemaOptions = {}): TPick<T, K[number]> {
+    // prettier-ignore
+    return ObjectMap.Map<TPick<T, K[number]>>(schema, (schema) => {
+      const object = ValueClone.Clone(schema)
+      if (object.required) {
+        object.required = object.required.filter((key: any) => keys.includes(key))
+        if (object.required.length === 0) delete object.required
+      }
+      for (const key of globalThis.Object.keys(object.properties)) {
+        if (!keys.includes(key as any)) delete object.properties[key]
+      }
+      return Create(object)
+    }, options)
   }
 
   /** `Extended` Creates a Promise type */
@@ -985,29 +1041,23 @@ export namespace Type {
   }
 
   /** `Standard` Creates an object type whose properties are all required */
-  export function Required<T extends TObject>(schema: T, options: SchemaOptions = {}): TRequired<T> {
-    const normal = schema
-    const object = { ...ValueClone.Clone(normal), ...options, [Hint]: 'Required' }
-    object.required = globalThis.Object.keys(object.properties)
-    for (const key of globalThis.Object.keys(object.properties)) {
-      const property = object.properties[key]
-      const modifier = property[Modifier]
-      switch (modifier) {
-        case 'ReadonlyOptional':
-          property[Modifier] = 'Readonly'
-          break
-        case 'Readonly':
-          property[Modifier] = 'Readonly'
-          break
-        case 'Optional':
-          delete property[Modifier]
-          break
-        default:
-          delete property[Modifier]
-          break
+  export function Required<T extends TSchema>(schema: T, options: SchemaOptions = {}): TRequired<T> {
+    // prettier-ignore
+    return ObjectMap.Map<TRequired<T>>(schema, (schema) => {
+      const object = { ...ValueClone.Clone(schema), ...options }
+      object.required = globalThis.Object.keys(object.properties)
+      for (const key of globalThis.Object.keys(object.properties)) {
+        const property = object.properties[key]
+        // prettier-ignore
+        switch (property[Modifier]) {
+          case 'ReadonlyOptional': property[Modifier] = 'Readonly'; break
+          case 'Readonly': property[Modifier] = 'Readonly'; break
+          case 'Optional': delete property[Modifier]; break
+          default: delete property[Modifier]; break
+        }
       }
-    }
-    return Create(object)
+      return Create(object) as any
+    }, options)
   }
 
   /** `Extended` Creates a type from this functions return type */

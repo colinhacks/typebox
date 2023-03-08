@@ -13,28 +13,25 @@
 // import { TypeGuard } from 'src/guard/guard'
 // import { Value } from '@sinclair/typebox/value'
 
-import { Type, Static, TypeGuard, TypeMap, KeyResolver, TPromise } from '@sinclair/typebox'
+import { Type, Static, TypeGuard } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
 import * as Types from '@sinclair/typebox'
 
-// -------------------------------------------------------------------------------------
-// Helpers
-// -------------------------------------------------------------------------------------
-export type Evaluate<T> = T extends infer O ? { [K in keyof O]: O[K] } : never
-export type Assert<T, E> = T extends E ? T : never
+const A = Type.Object({
+  x: Type.Number(),
+  y: Type.Number(),
+})
 
-const T = Type.Intersect([
-  Type.Object({
-    x: Type.Number(),
-    y: Type.Number(),
-    z: Type.Number(),
-  }),
-  Type.Object({
-    a: Type.String(),
-    b: Type.Number(),
-    c: Type.Number(),
-  }),
-])
+const B = Type.Object({
+  x: Type.Number(),
+  y: Type.Number(),
+})
 
-const K = KeyResolver.KeyOf(T)
-console.log(K)
+const AK = Type.KeyOf(A)
+const BK = Type.KeyOf(B)
+console.log(AK)
+console.log(BK)
+
+const C = Type.Extends(AK, BK, Type.Literal(1), Type.Literal(2))
+
+console.log(C)

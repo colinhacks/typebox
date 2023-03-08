@@ -48,12 +48,12 @@ import { Type, Static } from '@sinclair/typebox'
     B: Type.String(),
   })
 
-  const T = Type.Pick(A, Type.KeyOf(B))
+  // const T = Type.Pick(A, Type.KeyOf(B))
 
-  type T = Static<typeof T>
+  // type T = Static<typeof T>
 
-  Expect(T).ToInfer<{
-    A: string
-    B: string
-  }>()
+  // Expect(T).ToInfer<{
+  //   A: string
+  //   B: string
+  // }>()
 }

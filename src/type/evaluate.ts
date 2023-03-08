@@ -26,162 +26,162 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
-import { ValueClone } from '../value/clone'
-import { TypeGuard } from './guard'
-import * as Types from './type'
+// import { ValueClone } from '../value/clone'
+// import { TypeGuard } from './guard'
+// import * as Types from './type'
 
-// -------------------------------------------------------------------------------------
-// Helpers
-// -------------------------------------------------------------------------------------
-export type Evaluate<T> = T extends infer O ? { [K in keyof O]: O[K] } : never
-export type Assert<T, E> = T extends E ? T : never
+// // -------------------------------------------------------------------------------------
+// // Helpers
+// // -------------------------------------------------------------------------------------
+// export type Evaluate<T> = T extends infer O ? { [K in keyof O]: O[K] } : never
+// export type Assert<T, E> = T extends E ? T : never
 
-// -------------------------------------------------------------------------------------
-// Omit
-// -------------------------------------------------------------------------------------
-export type TOmitArray<T extends Types.TSchema[], K extends keyof any> = Assert<{ [K2 in keyof T]: TOmit2<T[K2], K> }, Types.TSchema[]>
-export type TOmitProperties<T extends Types.TProperties, K extends keyof any> = Evaluate<Assert<Omit<T, K>, Types.TProperties>>
+// // -------------------------------------------------------------------------------------
+// // Omit
+// // -------------------------------------------------------------------------------------
+// export type TOmitArray<T extends Types.TSchema[], K extends keyof any> = Assert<{ [K2 in keyof T]: TOmit2<T[K2], K> }, Types.TSchema[]>
+// export type TOmitProperties<T extends Types.TProperties, K extends keyof any> = Evaluate<Assert<Omit<T, K>, Types.TProperties>>
 
-// prettier-ignore
-export type TOmit2<T extends Types.TSchema, K extends keyof any> = 
-  T extends Types.TIntersect<infer S> ? Types.TIntersect<TOmitArray<S, K>> : 
-  T extends Types.TUnion<infer S> ? Types.TUnion<TOmitArray<S, K>> : 
-  T extends Types.TObject<infer S> ? Types.TObject<TOmitProperties<S, K>> : 
-  T
+// // prettier-ignore
+// export type TOmit2<T extends Types.TSchema, K extends keyof any> =
+//   T extends Types.TIntersect<infer S> ? Types.TIntersect<TOmitArray<S, K>> :
+//   T extends Types.TUnion<infer S> ? Types.TUnion<TOmitArray<S, K>> :
+//   T extends Types.TObject<infer S> ? Types.TObject<TOmitProperties<S, K>> :
+//   T
 
-// -------------------------------------------------------------------------------------
-// Pick
-// -------------------------------------------------------------------------------------
-export type TPickArray<T extends Types.TSchema[], K extends keyof any> = Assert<{ [K2 in keyof T]: TPick2<T[K2], K> }, Types.TSchema[]>
-export type TPickProperties<T extends Types.TProperties, K extends keyof any> = Evaluate<Assert<Pick<T, K>, Types.TProperties>>
+// // -------------------------------------------------------------------------------------
+// // Pick
+// // -------------------------------------------------------------------------------------
+// export type TPickArray<T extends Types.TSchema[], K extends keyof any> = Assert<{ [K2 in keyof T]: TPick2<T[K2], K> }, Types.TSchema[]>
+// export type TPickProperties<T extends Types.TProperties, K extends keyof any> = Evaluate<Assert<Pick<T, K>, Types.TProperties>>
 
-// prettier-ignore
-export type TPick2<T extends Types.TSchema, K extends keyof any> = 
-  T extends Types.TIntersect<infer S> ? Types.TIntersect<TPickArray<S, K>> : 
-  T extends Types.TUnion<infer S>     ? Types.TUnion<TPickArray<S, K>> : 
-  T extends Types.TObject<infer S>    ? Types.TObject<TPickProperties<S, K>> : 
-  T
+// // prettier-ignore
+// export type TPick2<T extends Types.TSchema, K extends keyof any> =
+//   T extends Types.TIntersect<infer S> ? Types.TIntersect<TPickArray<S, K>> :
+//   T extends Types.TUnion<infer S>     ? Types.TUnion<TPickArray<S, K>> :
+//   T extends Types.TObject<infer S>    ? Types.TObject<TPickProperties<S, K>> :
+//   T
 
-// -------------------------------------------------------------------------
-// TPartial
-// -------------------------------------------------------------------------
-export type TPartialArray<T extends Types.TSchema[]> = Assert<{ [K in keyof T]: TPartial2<T[K]> }, Types.TSchema[]>
+// // -------------------------------------------------------------------------
+// // TPartial
+// // -------------------------------------------------------------------------
+// export type TPartialArray<T extends Types.TSchema[]> = Assert<{ [K in keyof T]: TPartial2<T[K]> }, Types.TSchema[]>
 
-// prettier-ignore
-export type TPartialProperties<T extends Types.TProperties> = Evaluate<Assert<{
-  [K in keyof T]: 
-    T[K] extends Types.TReadonlyOptional<infer U> ? Types.TReadonlyOptional<U> : 
-    T[K] extends Types.TReadonly<infer U>         ? Types.TReadonlyOptional<U> : 
-    T[K] extends Types.TOptional<infer U>         ? Types.TOptional<U>         : 
-    Types.TOptional<T[K]>
-}, Types.TProperties>>
+// // prettier-ignore
+// export type TPartialProperties<T extends Types.TProperties> = Evaluate<Assert<{
+//   [K in keyof T]:
+//     T[K] extends Types.TReadonlyOptional<infer U> ? Types.TReadonlyOptional<U> :
+//     T[K] extends Types.TReadonly<infer U>         ? Types.TReadonlyOptional<U> :
+//     T[K] extends Types.TOptional<infer U>         ? Types.TOptional<U>         :
+//     Types.TOptional<T[K]>
+// }, Types.TProperties>>
 
-// prettier-ignore
-export type TPartial2<T extends Types.TSchema> = 
-  T extends Types.TIntersect<infer S> ? Types.TIntersect<TPartialArray<S>> : 
-  T extends Types.TUnion<infer S>     ? Types.TUnion<TPartialArray<S>> : 
-  T extends Types.TObject<infer S>    ? Types.TObject<TPartialProperties<S>> : 
-  T
+// // prettier-ignore
+// export type TPartial2<T extends Types.TSchema> =
+//   T extends Types.TIntersect<infer S> ? Types.TIntersect<TPartialArray<S>> :
+//   T extends Types.TUnion<infer S>     ? Types.TUnion<TPartialArray<S>> :
+//   T extends Types.TObject<infer S>    ? Types.TObject<TPartialProperties<S>> :
+//   T
 
-// -------------------------------------------------------------------------
-// TRequired
-// -------------------------------------------------------------------------
-export type TRequiredArray<T extends Types.TSchema[]> = Assert<{ [K in keyof T]: TRequired2<T[K]> }, Types.TSchema[]>
+// // -------------------------------------------------------------------------
+// // TRequired
+// // -------------------------------------------------------------------------
+// export type TRequiredArray<T extends Types.TSchema[]> = Assert<{ [K in keyof T]: TRequired2<T[K]> }, Types.TSchema[]>
 
-// prettier-ignore
-export type TRequiredProperties<T extends Types.TProperties> = Evaluate<Assert<{
-  [K in keyof T]: 
-    T[K] extends Types.TReadonlyOptional<infer U> ? Types.TReadonly<U> : 
-    T[K] extends Types.TReadonly<infer U>         ? Types.TReadonly<U> :  
-    T[K] extends Types.TOptional<infer U>         ? U : 
-    T[K]
-}, Types.TProperties>>
+// // prettier-ignore
+// export type TRequiredProperties<T extends Types.TProperties> = Evaluate<Assert<{
+//   [K in keyof T]:
+//     T[K] extends Types.TReadonlyOptional<infer U> ? Types.TReadonly<U> :
+//     T[K] extends Types.TReadonly<infer U>         ? Types.TReadonly<U> :
+//     T[K] extends Types.TOptional<infer U>         ? U :
+//     T[K]
+// }, Types.TProperties>>
 
-// prettier-ignore
-export type TRequired2<T extends Types.TSchema> = 
-  T extends Types.TIntersect<infer S> ? Types.TIntersect<TRequiredArray<S>> : 
-  T extends Types.TUnion<infer S>     ? Types.TUnion<TRequiredArray<S>> : 
-  T extends Types.TObject<infer S>    ? Types.TObject<TRequiredProperties<S>> : 
-  T
+// // prettier-ignore
+// export type TRequired2<T extends Types.TSchema> =
+//   T extends Types.TIntersect<infer S> ? Types.TIntersect<TRequiredArray<S>> :
+//   T extends Types.TUnion<infer S>     ? Types.TUnion<TRequiredArray<S>> :
+//   T extends Types.TObject<infer S>    ? Types.TObject<TRequiredProperties<S>> :
+//   T
 
-// -------------------------------------------------------------------------
-// TKeyOf
-// -------------------------------------------------------------------------
-// prettier-ignore
-export type KeyOfTuple<T extends Types.TSchema> = { 
-  [K in keyof Types.Static<T>]: Types.TLiteral<Assert<K, Types.TLiteralValue>> 
-} extends infer U ? Types.UnionToTuple<{ [K in keyof U]: U[K] }[keyof U]> : never
+// // -------------------------------------------------------------------------
+// // TKeyOf
+// // -------------------------------------------------------------------------
+// // prettier-ignore
+// export type KeyOfTuple<T extends Types.TSchema> = {
+//   [K in keyof Types.Static<T>]: Types.TLiteral<Assert<K, Types.TLiteralValue>>
+// } extends infer U ? Types.UnionToTuple<{ [K in keyof U]: U[K] }[keyof U]> : never
 
-// prettier-ignore
-export type TKeyOf2<T extends Types.TSchema> = (
-  T extends Types.TIntersect ? KeyOfTuple<T> :
-  T extends Types.TUnion     ? KeyOfTuple<T> :
-  T extends Types.TObject    ? KeyOfTuple<T> :
-  []
-) extends infer R ? R extends [] ? Types.TNever : Types.TUnion<Assert<R, Types.TSchema[]>> : never
+// // prettier-ignore
+// export type TKeyOf2<T extends Types.TSchema> = (
+//   T extends Types.TIntersect ? KeyOfTuple<T> :
+//   T extends Types.TUnion     ? KeyOfTuple<T> :
+//   T extends Types.TObject    ? KeyOfTuple<T> :
+//   []
+// ) extends infer R ? R extends [] ? Types.TNever : Types.TUnion<Assert<R, Types.TSchema[]>> : never
+
+// // --------------------------------------------------------------------
+// // ObjectMap
+// // --------------------------------------------------------------------
+// export namespace ObjectMap {
+//   function Intersect(schema: Types.TIntersect, callback: (object: Types.TObject) => Types.TObject) {
+//     return Types.Type.Intersect(schema.allOf.map((inner) => Visit(inner, callback)))
+//   }
+//   function Union(schema: Types.TUnion, callback: (object: Types.TObject) => Types.TObject) {
+//     return Types.Type.Union(schema.anyOf.map((inner) => Visit(inner, callback)))
+//   }
+//   function Object(schema: Types.TObject, callback: (object: Types.TObject) => Types.TObject) {
+//     return callback(schema)
+//   }
+//   function Visit(schema: Types.TSchema, callback: (object: Types.TObject) => Types.TObject): Types.TSchema {
+//     if (TypeGuard.TIntersect(schema)) return Intersect(schema, callback)
+//     if (TypeGuard.TUnion(schema)) return Union(schema, callback)
+//     if (TypeGuard.TObject(schema)) return Object(schema, callback)
+//     return schema
+//   }
+//   export function Map(schema: Types.TSchema, callback: (object: Types.TObject) => Types.TObject): Types.TSchema {
+//     return Visit(ValueClone.Clone(schema), callback)
+//   }
+// }
 
 // --------------------------------------------------------------------
 // ObjectMap
 // --------------------------------------------------------------------
-export namespace ObjectMap {
-  function Intersect(schema: Types.TIntersect, callback: (object: Types.TObject) => Types.TObject) {
-    return Types.Type.Intersect(schema.allOf.map((inner) => Visit(inner, callback)))
-  }
-  function Union(schema: Types.TUnion, callback: (object: Types.TObject) => Types.TObject) {
-    return Types.Type.Union(schema.anyOf.map((inner) => Visit(inner, callback)))
-  }
-  function Object(schema: Types.TObject, callback: (object: Types.TObject) => Types.TObject) {
-    return callback(schema)
-  }
-  function Visit(schema: Types.TSchema, callback: (object: Types.TObject) => Types.TObject): Types.TSchema {
-    if (TypeGuard.TIntersect(schema)) return Intersect(schema, callback)
-    if (TypeGuard.TUnion(schema)) return Union(schema, callback)
-    if (TypeGuard.TObject(schema)) return Object(schema, callback)
-    return schema
-  }
-  export function Map(schema: Types.TSchema, callback: (object: Types.TObject) => Types.TObject): Types.TSchema {
-    return Visit(ValueClone.Clone(schema), callback)
-  }
-}
-
-// --------------------------------------------------------------------
-// ObjectMap
-// --------------------------------------------------------------------
-export namespace TypeMap {
-  export function Partial<T extends Types.TSchema>(schema: T): TPartial2<T> {
-    return ObjectMap.Map(schema, (object) => Types.Type.Partial(object)) as TPartial2<T>
-  }
-  export function Required<T extends Types.TSchema>(schema: T): TRequired2<T> {
-    return ObjectMap.Map(schema, (object) => Types.Type.Required(object)) as TRequired2<T>
-  }
-  export function Omit<T extends Types.TSchema, K extends (keyof Types.Static<T>)[]>(schema: T, keys: readonly [...K]): TOmit2<T, K[number]> {
-    return ObjectMap.Map(schema, (object) => Types.Type.Omit(object, keys)) as TOmit2<T, K[number]>
-  }
-  export function Pick<T extends Types.TSchema, K extends (keyof Types.Static<T>)[]>(schema: T, keys: readonly [...K]): TPick2<T, K[number]> {
-    return ObjectMap.Map(schema, (object) => Types.Type.Pick(object, keys)) as TPick2<T, K[number]>
-  }
-}
-// --------------------------------------------------------------------
-// KeyOf
-// --------------------------------------------------------------------
-export namespace KeyResolver {
-  function Intersect(schema: Types.TIntersect) {
-    return [...schema.allOf.reduce((set, schema) => Visit(schema).map((key) => set.add(key))[0], new Set<string>())]
-  }
-  function Union(schema: Types.TUnion) {
-    const sets = schema.anyOf.map((inner) => Visit(inner))
-    return [...sets.reduce((set, outer) => outer.map((key) => (sets.every((inner) => inner.includes(key)) ? set.add(key) : set))[0], new Set<string>())]
-  }
-  function Object(schema: Types.TObject) {
-    return globalThis.Object.keys(schema.properties)
-  }
-  function Visit(schema: Types.TSchema): string[] {
-    if (TypeGuard.TIntersect(schema)) return Intersect(schema)
-    if (TypeGuard.TUnion(schema)) return Union(schema)
-    if (TypeGuard.TObject(schema)) return Object(schema)
-    return []
-  }
-  export function KeyOf<T extends Types.TIntersect | Types.TUnion | Types.TObject>(schema: T) {
-    return Visit(schema)
-  }
-}
+// export namespace TypeMap {
+//   export function Partial<T extends Types.TSchema>(schema: T): TPartial2<T> {
+//     return ObjectMap.Map(schema, (object) => Types.Type.Partial(object)) as TPartial2<T>
+//   }
+//   export function Required<T extends Types.TSchema>(schema: T): TRequired2<T> {
+//     return ObjectMap.Map(schema, (object) => Types.Type.Required(object)) as TRequired2<T>
+//   }
+//   export function Omit<T extends Types.TSchema, K extends (keyof Types.Static<T>)[]>(schema: T, keys: readonly [...K]): TOmit2<T, K[number]> {
+//     return ObjectMap.Map(schema, (object) => Types.Type.Omit(object, keys)) as TOmit2<T, K[number]>
+//   }
+//   export function Pick<T extends Types.TSchema, K extends (keyof Types.Static<T>)[]>(schema: T, keys: readonly [...K]): TPick2<T, K[number]> {
+//     return ObjectMap.Map(schema, (object) => Types.Type.Pick(object, keys)) as TPick2<T, K[number]>
+//   }
+// }
+// // --------------------------------------------------------------------
+// // KeyOf
+// // --------------------------------------------------------------------
+// export namespace KeyResolver {
+//   function Intersect(schema: Types.TIntersect) {
+//     return [...schema.allOf.reduce((set, schema) => Visit(schema).map((key) => set.add(key))[0], new Set<string>())]
+//   }
+//   function Union(schema: Types.TUnion) {
+//     const sets = schema.anyOf.map((inner) => Visit(inner))
+//     return [...sets.reduce((set, outer) => outer.map((key) => (sets.every((inner) => inner.includes(key)) ? set.add(key) : set))[0], new Set<string>())]
+//   }
+//   function Object(schema: Types.TObject) {
+//     return globalThis.Object.keys(schema.properties)
+//   }
+//   function Visit(schema: Types.TSchema): string[] {
+//     if (TypeGuard.TIntersect(schema)) return Intersect(schema)
+//     if (TypeGuard.TUnion(schema)) return Union(schema)
+//     if (TypeGuard.TObject(schema)) return Object(schema)
+//     return []
+//   }
+//   export function KeyOf<T extends Types.TIntersect | Types.TUnion | Types.TObject>(schema: T) {
+//     return Visit(schema)
+//   }
+// }

@@ -2,6 +2,9 @@
 - [ ] Consider checking `void` as `undefined`.
 - [ ] Add symbol to extends checks
 
+### Pick / Omit 
+- [ ] Re-enable these to be picked from Union<Literal[]>
+
 ### Value
 - [ ] Investigate performance degredation on `Value.Check`. Blowout for `Array_ObjectA` and `Array_ObjectB` and `Array_Recursive` especially.
 

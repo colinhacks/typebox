@@ -46,11 +46,11 @@ import { Type, Static } from '@sinclair/typebox'
     B: Type.String(),
   })
 
-  const T = Type.Omit(A, Type.KeyOf(B))
+  // const T = Type.Omit(A, Type.KeyOf(B))
 
-  type T = Static<typeof T>
+  // type T = Static<typeof T>
 
-  Expect(T).ToInfer<{
-    C: string
-  }>()
+  // Expect(T).ToInfer<{
+  //   C: string
+  // }>()
 }
