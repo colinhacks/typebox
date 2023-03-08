@@ -29,7 +29,6 @@ THE SOFTWARE.
 import { ValueClone } from '../value/clone'
 import { TypeExtends, TypeExtendsResult } from './extends'
 import { TypeGuard } from './guard'
-import { TypeNormal } from './normal'
 
 // --------------------------------------------------------------------------
 // Symbols
@@ -893,11 +892,6 @@ export namespace Type {
         { type: 'boolean', const: true },
       ],
     })
-  }
-
-  /** `Standard` Returns the normalized representation of this type */
-  export function Normal<T extends TSchema>(schema: T) {
-    return TypeNormal.Normal(schema)
   }
 
   /** `Standard` Creates a not type */

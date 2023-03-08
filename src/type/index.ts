@@ -28,5 +28,4 @@ THE SOFTWARE.
 
 export * from './extends'
 export * from './guard'
-export * from './normal'
 export * from './type'
