@@ -13,27 +13,46 @@
 // import { TypeGuard } from 'src/guard/guard'
 // import { Value } from '@sinclair/typebox/value'
 
-import { Type, Static } from '@sinclair/typebox'
+import { Type, Static, TypeGuard, KeyResolver } from '@sinclair/typebox'
+import * as Types from '@sinclair/typebox'
 
-const T = Type.Object({
-  x: Type.Number(),
-  y: Type.Number(),
-})
+// --------------------------------------------------------------------
+// TypeResolver
+// --------------------------------------------------------------------
+export namespace TypeResolver {
+  function Intersect(schema: Types.TIntersect) {
+    return [...schema.allOf.reduce((set, schema) => Visit(schema).map((key) => set.add(key))[0], new Set<string>())]
+  }
+  function Union(schema: Types.TUnion) {
+    const sets = schema.anyOf.map((inner) => Visit(inner))
+    return [...sets.reduce((set, outer) => outer.map((key) => (sets.every((inner) => inner.includes(key)) ? set.add(key) : set))[0], new Set<string>())]
+  }
+  function Object(schema: Types.TObject) {
+    return globalThis.Object.keys(schema.properties)
+  }
+  function Visit(schema: Types.TSchema): string[] {
+    if (TypeGuard.TIntersect(schema)) return Intersect(schema)
+    if (TypeGuard.TUnion(schema)) return Union(schema)
+    if (TypeGuard.TObject(schema)) return Object(schema)
+    return []
+  }
+  export function Resolve<T extends Types.TSchema>(schema: T) {
+    return Visit(schema)
+  }
+}
 
-const A = Type.Object({
-  a: Type.Number(),
-  b: Type.Number(),
-})
+const T = Type.Union([
+  Type.Object({
+    x: Type.Number(),
+    y: Type.Number()
+  }),
+  Type.Object({
+    x: Type.Number(),
+    y: Type.Number()
+  })
+])
 
-const U = Type.Union([A, T])
+const K = Type.KeyOf(T)
 
-const K = Type.KeyOf(U)
+console.log(K)
 
-type U = Static<typeof U>
-
-// import { Value } from '@sinclair/typebox/value'
-// import * as Types from '@sinclair/typebox'
-// const A = Type.Object({ a: Type.Number() })
-// const B = Type.Object({ b: Type.Number() })
-// const C = Type.Object({ c: Type.Number() })
-// const U = Type.Intersect([A, B, C], { unevaluatedProperties: true })

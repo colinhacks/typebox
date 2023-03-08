@@ -70,8 +70,11 @@ export interface SchemaOptions {
   [prop: string]: any
 }
 
-export interface TSchema extends SchemaOptions {
+export interface TKind {
   [Kind]: string
+}
+
+export interface TSchema extends SchemaOptions, TKind {
   [Hint]?: string
   [Modifier]?: string
   params: unknown[]
@@ -762,9 +765,7 @@ export namespace TypeGuard {
     }
     return true
   }
-  export function TKind(schema: unknown): schema is { [Kind]: string } & Record<keyof any, unknown> {
-    return IsObject(schema) && Kind in schema
-  }
+
   /** Returns true if the given schema is TDate */
   export function TDate(schema: unknown): schema is TDate {
     return (
@@ -801,8 +802,8 @@ export namespace TypeGuard {
   /** Returns true if the given schema is TInteger */
   export function TInteger(schema: unknown): schema is TInteger {
     return (
-      IsObject(schema) &&
       TKind(schema) &&
+      schema[Kind] === 'Integer' &&
       schema.type === 'integer' &&
       IsOptionalString(schema.$id) &&
       IsOptionalNumber(schema.multipleOf) &&
@@ -828,6 +829,10 @@ export namespace TypeGuard {
       if (!TSchema(inner)) return false
     }
     return true
+  }
+  /** Returns true if the given schema is TKind */
+  export function TKind(schema: unknown): schema is Record<typeof Kind | string, unknown> {
+    return IsObject(schema) && Kind in schema
   }
   /** Returns true if the given schema is TLiteral */
   export function TLiteral(schema: unknown): schema is TLiteral {
@@ -862,11 +867,26 @@ export namespace TypeGuard {
   }
   /** Returns true if the given schema is TNot */
   export function TNot(schema: unknown): schema is TNot {
-    return TKind(schema) && schema[Kind] === 'Not' && IsArray(schema.allOf) && schema.allOf.length === 2 && IsObject(schema.allOf[0]) && TSchema(schema.allOf[0].not) && TSchema(schema.allOf[1])
+    // prettier-ignore
+    return (
+      TKind(schema) && 
+      schema[Kind] === 'Not' && 
+      IsArray(schema.allOf) && 
+      schema.allOf.length === 2 && 
+      IsObject(schema.allOf[0]) && 
+      TSchema(schema.allOf[0].not) && 
+      TSchema(schema.allOf[1]) 
+    )
   }
   /** Returns true if the given schema is TNull */
   export function TNull(schema: unknown): schema is TNull {
-    return TKind(schema) && schema[Kind] === 'Null' && schema.type === 'null' && IsOptionalString(schema.$id)
+    // prettier-ignore
+    return (
+      TKind(schema) && 
+      schema[Kind] === 'Null' && 
+      schema.type === 'null' && 
+      IsOptionalString(schema.$id)
+    )
   }
   /** Returns true if the given schema is TNumber */
   export function TNumber(schema: unknown): schema is TNumber {
@@ -1101,7 +1121,8 @@ export namespace TypeGuard {
       TUnion(schema) ||
       TUint8Array(schema) ||
       TUnknown(schema) ||
-      TVoid(schema)
+      TVoid(schema) ||
+      TKind(schema)
     )
   }
 }
@@ -1636,7 +1657,6 @@ export namespace ObjectMap {
     return { ...Visit(TypeClone.Clone(schema), callback), ...options } as unknown as T
   }
 }
-
 // --------------------------------------------------------------------
 // KeyResolver
 // --------------------------------------------------------------------
@@ -1661,7 +1681,6 @@ export namespace KeyResolver {
     return Visit(schema)
   }
 }
-
 // --------------------------------------------------------------------------
 // TypeBuilder
 // --------------------------------------------------------------------------
