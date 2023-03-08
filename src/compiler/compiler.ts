@@ -26,10 +26,10 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
+import * as Types from '../typebox'
 import { ValueErrors, ValueError } from '../errors/index'
 import { TypeSystem, Custom, Format } from '../system/index'
 import { ValueHash } from '../value/hash'
-import * as Types from '..'
 
 // -------------------------------------------------------------------
 // CheckFunction
@@ -459,7 +459,9 @@ export namespace TypeCompiler {
 
   /** Returns the generated validation code used to validate this type. */
   export function Code<T extends Types.TSchema>(schema: T, references: Types.TSchema[] = []) {
-    Types.TypeGuard.Assert(schema, references)
+    if (Types.TypeGuard.TSchema(schema) || !references.every((schema) => Types.TypeGuard.TSchema(schema))) {
+      throw Error('Invalid Schema')
+    }
     return Build(schema, references)
   }
 

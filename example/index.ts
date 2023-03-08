@@ -13,25 +13,27 @@
 // import { TypeGuard } from 'src/guard/guard'
 // import { Value } from '@sinclair/typebox/value'
 
-import { Type, Static, TypeGuard } from '@sinclair/typebox'
-import { Value } from '@sinclair/typebox/value'
-import * as Types from '@sinclair/typebox'
+import { Type, Static } from '@sinclair/typebox'
+
+const T = Type.Object({
+  x: Type.Number(),
+  y: Type.Number(),
+})
 
 const A = Type.Object({
-  x: Type.Number(),
-  y: Type.Number(),
+  a: Type.Number(),
+  b: Type.Number(),
 })
 
-const B = Type.Object({
-  x: Type.Number(),
-  y: Type.Number(),
-})
+const U = Type.Union([A, T])
 
-const AK = Type.KeyOf(A)
-const BK = Type.KeyOf(B)
-console.log(AK)
-console.log(BK)
+const K = Type.KeyOf(U)
 
-const C = Type.Extends(AK, BK, Type.Literal(1), Type.Literal(2))
+type U = Static<typeof U>
 
-console.log(C)
+// import { Value } from '@sinclair/typebox/value'
+// import * as Types from '@sinclair/typebox'
+// const A = Type.Object({ a: Type.Number() })
+// const B = Type.Object({ b: Type.Number() })
+// const C = Type.Object({ c: Type.Number() })
+// const U = Type.Intersect([A, B, C], { unevaluatedProperties: true })

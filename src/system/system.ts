@@ -26,7 +26,7 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
-import { Kind, Type } from '..'
+import { Kind, Type } from '../typebox'
 import { Custom } from './custom'
 import { Format } from './format'
 

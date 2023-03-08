@@ -26,7 +26,7 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
-import * as Types from '..'
+import * as Types from '../typebox'
 import { TypeSystem } from '../system/index'
 import { Custom } from '../system/custom'
 import { Format } from '../system/format'

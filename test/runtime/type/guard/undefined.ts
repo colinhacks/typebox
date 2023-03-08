@@ -1,4 +1,4 @@
-import { TypeGuard } from '@sinclair/typebox/type'
+import { TypeGuard } from '@sinclair/typebox'
 import { Type } from '@sinclair/typebox'
 import { Assert } from '../../assert/index'
 

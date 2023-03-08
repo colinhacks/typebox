@@ -26,7 +26,7 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
-import { Type, Static } from '..'
+import { Type, Static } from '../typebox'
 import { Is, ObjectType, ArrayType, TypedArrayType, ValueType } from './is'
 import { ValueClone } from './clone'
 import { ValuePointer } from './pointer'

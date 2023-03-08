@@ -133,6 +133,15 @@ export class FluentType<T extends Types.TSchema = Types.TSchema> {
   public ReadonlyOptional(): FluentType<Types.TReadonlyOptional<T>> {
     return new FluentType(Types.Type.ReadonlyOptional(this.#schema))
   }
+  public Pick<K extends (keyof Static<T>)[]>(keys: [...K]) {
+    return new FluentType(Types.Type.Pick(this.Schema, keys as any[]))
+  }
+  public Omit<K extends (keyof Static<T>)[]>(keys: [...K]) {
+    return new FluentType(Types.Type.Omit(this.Schema, keys as any[]))
+  }
+  public KeyOf() {
+    return new FluentKeyOf(Types.Type.KeyOf(this.Schema))
+  }
   public Optional(): FluentType<Types.TOptional<T>> {
     return new FluentType(Types.Type.Optional(this.#schema))
   }
@@ -182,18 +191,10 @@ export class FluentObject<T extends Types.TObject = Types.TObject> extends Fluen
   public Required() {
     return new FluentObject(Types.Type.Required(this.Schema))
   }
-  public Pick<K extends Types.ObjectPropertyKeys<T>[]>(keys: [...K]) {
-    return new FluentObject(Types.Type.Pick(this.Schema, keys))
-  }
-  public Omit<K extends Types.ObjectPropertyKeys<T>[]>(keys: readonly [...K]) {
-    return new FluentObject(Types.Type.Omit(this.Schema, keys))
-  }
   public Strict(): this {
     return new FluentObject({ ...this.Schema, additionalProperties: false }) as this
   }
-  public KeyOf() {
-    return new FluentKeyOf(Types.Type.KeyOf(this.Schema))
-  }
+
 }
 export class FluentArray<T extends Types.TArray<Types.TSchema>> extends FluentType<T> {
   public MinLength(n: number) {
@@ -340,7 +341,7 @@ export class FluentNever<T extends Types.TNever> extends FluentType<T> {}
 export class FluentNot<T extends Types.TNot<Types.TSchema, Types.TSchema>> extends FluentType<T> {}
 export class FluentUndefined<T extends Types.TUndefined> extends FluentType<T> {}
 export class FluentBoolean extends FluentType<Types.TBoolean> {}
-export class FluentKeyOf<T extends Types.TObject> extends FluentType<T> {}
+export class FluentKeyOf<T extends Types.TKeyOf<any>> extends FluentType<T> {}
 export type FluentProperties = Record<any, FluentType>
 export class FluentPromise<T extends Types.TSchema> extends FluentType<T> {}
 export class FluentUnion<T extends Types.TUnion> extends FluentType<T> {}

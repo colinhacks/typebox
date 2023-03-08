@@ -1,4 +1,4 @@
-import { TypeExtends, TypeExtendsResult } from '@sinclair/typebox/type'
+import { TypeExtends, TypeExtendsResult } from '@sinclair/typebox'
 import { Type } from '@sinclair/typebox'
 import { Assert } from '../../assert/index'
 
