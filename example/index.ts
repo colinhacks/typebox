@@ -13,23 +13,16 @@
 // import { TypeGuard } from 'src/guard/guard'
 // import { Value } from '@sinclair/typebox/value'
 
-import { Type, Static, TypeGuard, TypeUtility, KeyOf } from '@sinclair/typebox'
+import { Type, Static, TypeGuard, TypeUtility, KeyOf, TPromise } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
 import * as Types from '@sinclair/typebox'
 
 type TT = { x: number } | { x: number } | { z: number }
 
-type KK = keyof TT
 
-const T = Type.Object({
-    x: Type.Number(),
-    y: Type.Number()
-})
-
-type T = Static<typeof T>
-
-type K = keyof T
-
-const K = KeyOf.Evaluate(T)
-
-console.log(K)
+const X = TypeUtility.Required(TypeUtility.Partial(Type.Union([
+    Type.Intersect([
+        Type.Object({ x: Type.Readonly(Type.Number()) }),
+        Type.Object({ x: Type.String() })
+    ])
+])))

@@ -30,6 +30,75 @@ import { ValueClone } from '../value/clone'
 import { TypeGuard } from './guard'
 import * as Types from './type'
 
+// -------------------------------------------------------------------------
+// TPartial
+// -------------------------------------------------------------------------
+export type TPartialIntersect<T extends Types.TSchema[]> = {
+  [K in keyof T]: TPartial2<T[K]> extends infer S ? (S extends Types.TSchema ? S : never) : never
+} extends infer O
+  ? O extends Types.TSchema[]
+    ? Types.TIntersect<O>
+    : never
+  : never
+
+export type TPartialUnion<T extends Types.TSchema[]> = {
+  [K in keyof T]: TPartial2<T[K]> extends infer S ? (S extends Types.TSchema ? S : never) : never
+} extends infer O
+  ? O extends Types.TSchema[]
+    ? Types.TUnion<O>
+    : never
+  : never
+
+export type TPartialObject<T extends Types.TObject> = {
+  [K in keyof T['properties']]: T['properties'][K] extends Types.TReadonlyOptional<infer U>
+    ? Types.TReadonlyOptional<U>
+    : T['properties'][K] extends Types.TReadonly<infer U>
+    ? Types.TReadonlyOptional<U>
+    : T['properties'][K] extends Types.TOptional<infer U>
+    ? Types.TOptional<U>
+    : Types.TOptional<T['properties'][K]>
+} extends infer Properties
+  ? Properties extends Types.TProperties
+    ? Types.TObject<Properties>
+    : never
+  : never
+
+export type TPartial2<T extends Types.TSchema> = T extends Types.TIntersect<infer S> ? TPartialIntersect<S> : T extends Types.TUnion<infer S> ? TPartialUnion<S> : T extends Types.TObject ? TPartialObject<T> : T
+// -------------------------------------------------------------------------
+// TRequired
+// -------------------------------------------------------------------------
+export type TRequiredIntersect<T extends Types.TSchema[]> = {
+  [K in keyof T]: TRequired2<T[K]> extends infer S ? (S extends Types.TSchema ? S : never) : never
+} extends infer O
+  ? O extends Types.TSchema[]
+    ? Types.TIntersect<O>
+    : never
+  : never
+
+export type TRequiredUnion<T extends Types.TSchema[]> = {
+  [K in keyof T]: TRequired2<T[K]> extends infer S ? (S extends Types.TSchema ? S : never) : never
+} extends infer O
+  ? O extends Types.TSchema[]
+    ? Types.TUnion<O>
+    : never
+  : never
+
+export type TRequiredObject<T extends Types.TObject> = {
+  [K in keyof T['properties']]: T['properties'][K] extends Types.TReadonlyOptional<infer U>
+    ? Types.TReadonly<U>
+    : T['properties'][K] extends Types.TReadonly<infer U>
+    ? Types.TReadonly<U>
+    : T['properties'][K] extends Types.TOptional<infer U>
+    ? U
+    : T['properties'][K]
+} extends infer Properties
+  ? Properties extends Types.TProperties
+    ? Types.TObject<Properties>
+    : never
+  : never
+
+export type TRequired2<T extends Types.TSchema> = T extends Types.TIntersect<infer S> ? TRequiredIntersect<S> : T extends Types.TUnion<infer S> ? TRequiredUnion<S> : T extends Types.TObject ? TRequiredObject<T> : T
+
 // --------------------------------------------------------------------
 // TypeUtility
 // --------------------------------------------------------------------
@@ -52,17 +121,17 @@ export namespace TypeUtility {
   function Map(schema: Types.TSchema, callback: (object: Types.TObject) => Types.TObject): Types.TSchema {
     return Visit(ValueClone.Clone(schema), callback)
   }
-  export function Partial<T extends Types.TSchema>(schema: T): T {
-    return Map(schema, (object) => Types.Type.Partial(object)) as T
+  export function Partial<T extends Types.TSchema>(schema: T): TPartial2<T> {
+    return Map(schema, (object) => Types.Type.Partial(object)) as TPartial2<T>
   }
-  export function Required<T extends Types.TSchema>(schema: T): T {
-    return Map(schema, (object) => Types.Type.Required(object)) as T
+  export function Required<T extends Types.TSchema>(schema: T): TRequired2<T> {
+    return Map(schema, (object) => Types.Type.Required(object)) as TRequired2<T>
   }
-  export function Omit<T extends Types.TSchema>(schema: T, keys: string[]): T {
-    return Map(schema, (object) => Types.Type.Omit(object, keys)) as T
+  export function Omit(schema: Types.TSchema, keys: string[]): Types.TSchema {
+    return Map(schema, (object) => Types.Type.Omit(object, keys))
   }
-  export function Pick<T extends Types.TSchema>(schema: T, keys: string[]): T {
-    return Map(schema, (object) => Types.Type.Pick(object, keys)) as T
+  export function Pick(schema: Types.TSchema, keys: string[]): Types.TSchema {
+    return Map(schema, (object) => Types.Type.Pick(object, keys))
   }
 }
 // --------------------------------------------------------------------
