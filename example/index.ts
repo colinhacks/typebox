@@ -17,17 +17,3 @@ import { TypeSystem } from '@sinclair/typebox/system'
 import { TypeCompiler } from '@sinclair/typebox/compiler'
 import { Type, Static, TypeGuard, TypeExtends, TypeExtendsResult } from '@sinclair/typebox'
 import * as Types from '@sinclair/typebox'
-
-TypeSystem.AllowArrayAsObject
-const A = Type.Object({
-  x: Type.Union([Type.Undefined(), Type.String()]),
-})
-const B = Type.Object({
-  y: Type.String(),
-})
-const T = Type.Intersect([A, Type.Partial(B)])
-
-const C = TypeCompiler.Compile(T)
-
-console.log(C.Code())
-console.log(C.Check({ x: '1', y: 1 }))

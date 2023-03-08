@@ -26,9 +26,8 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
-import { Kind, TSchema, SchemaOptions, IntersectReduce, IntersectEvaluate } from '@sinclair/typebox'
-import { TypeGuard } from '@sinclair/typebox/guard'
-import { Custom } from '@sinclair/typebox/custom'
+import { TypeGuard, Kind, TSchema, SchemaOptions, IntersectReduce, IntersectEvaluate } from '@sinclair/typebox'
+import { Custom } from '@sinclair/typebox/system'
 import { Value } from '@sinclair/typebox/value'
 
 function IntersectAllOfCheck(schema: IntersectAllOf<TSchema[]>, value: unknown) {

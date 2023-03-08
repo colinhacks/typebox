@@ -26,8 +26,8 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
+import { Custom } from '@sinclair/typebox/system'
 import { Kind, TSchema, SchemaOptions } from '@sinclair/typebox'
-import { Custom } from '@sinclair/typebox/custom'
 
 function UnionEnumCheck(schema: TUnionEnum<(string | number)[]>, value: unknown) {
   return (typeof value === 'string' || typeof value === 'number') && schema.enum.includes(value)

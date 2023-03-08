@@ -27,7 +27,7 @@ THE SOFTWARE.
 ---------------------------------------------------------------------------*/
 
 import { Kind, TSchema, SchemaOptions, Static } from '@sinclair/typebox'
-import { Custom } from '@sinclair/typebox/custom'
+import { Custom } from '@sinclair/typebox/system'
 import { Value } from '@sinclair/typebox/value'
 
 function UnionOneOfCheck(schema: UnionOneOf<TSchema[]>, value: unknown) {

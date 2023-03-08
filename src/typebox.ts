@@ -32,7 +32,6 @@ THE SOFTWARE.
 export const Kind = Symbol.for('TypeBox.Kind')
 export const Hint = Symbol.for('TypeBox.Hint')
 export const Modifier = Symbol.for('TypeBox.Modifier')
-
 // -------------------------------------------------------------------------------------
 // Helpers
 // -------------------------------------------------------------------------------------
@@ -43,7 +42,6 @@ export type UnionLast<U> = UnionToIntersect<U extends unknown ? (x: U) => 0 : ne
 export type UnionToTuple<U, L = UnionLast<U>> = [U] extends [never] ? [] : [...UnionToTuple<Exclude<U, L>>, L]
 export type Evaluate<T> = T extends infer O ? { [K in keyof O]: O[K] } : never
 export type Assert<T, E> = T extends E ? T : never
-
 // --------------------------------------------------------------------------
 // Modifiers
 // --------------------------------------------------------------------------
@@ -51,7 +49,6 @@ export type TModifier = TReadonlyOptional<TSchema> | TOptional<TSchema> | TReado
 export type TReadonly<T extends TSchema> = T & { [Modifier]: 'Readonly' }
 export type TOptional<T extends TSchema> = T & { [Modifier]: 'Optional' }
 export type TReadonlyOptional<T extends TSchema> = T & { [Modifier]: 'ReadonlyOptional' }
-
 // --------------------------------------------------------------------------
 // Schema
 // --------------------------------------------------------------------------
@@ -65,26 +62,22 @@ export interface SchemaOptions {
   description?: string
   /** Default value for this schema */
   default?: any
-  /** Example values matching this schema. */
+  /** Example values matching this schema */
   examples?: any
   [prop: string]: any
 }
-
 export interface TKind {
   [Kind]: string
 }
-
 export interface TSchema extends SchemaOptions, TKind {
   [Hint]?: string
   [Modifier]?: string
   params: unknown[]
   static: unknown
 }
-
 // --------------------------------------------------------------------------
 // TAnySchema
 // --------------------------------------------------------------------------
-
 export type TAnySchema =
   | TSchema
   | TAny
@@ -112,11 +105,10 @@ export type TAnySchema =
   | TUint8Array
   | TUnknown
   | TVoid
-
 // --------------------------------------------------------------------------
 // TNumeric
 // --------------------------------------------------------------------------
-
+export type TNumeric = TInteger | TNumber
 export interface NumericOptions extends SchemaOptions {
   exclusiveMaximum?: number
   exclusiveMinimum?: number
@@ -124,49 +116,38 @@ export interface NumericOptions extends SchemaOptions {
   minimum?: number
   multipleOf?: number
 }
-
-export type TNumeric = TInteger | TNumber
-
 // --------------------------------------------------------------------------
 // Any
 // --------------------------------------------------------------------------
-
 export interface TAny extends TSchema {
   [Kind]: 'Any'
   static: any
 }
-
 // --------------------------------------------------------------------------
 // Array
 // --------------------------------------------------------------------------
-
 export interface ArrayOptions extends SchemaOptions {
   uniqueItems?: boolean
   minItems?: number
   maxItems?: number
 }
-
 export interface TArray<T extends TSchema = TSchema> extends TSchema, ArrayOptions {
   [Kind]: 'Array'
   static: Array<Static<T, this['params']>>
   type: 'array'
   items: T
 }
-
 // --------------------------------------------------------------------------
 // Boolean
 // --------------------------------------------------------------------------
-
 export interface TBoolean extends TSchema {
   [Kind]: 'Boolean'
   static: boolean
   type: 'boolean'
 }
-
 // --------------------------------------------------------------------------
 // Constructor
 // --------------------------------------------------------------------------
-
 export type TConstructorParameters<T extends TConstructor<TSchema[], TSchema>> = TTuple<T['parameters']>
 export type TInstanceType<T extends TConstructor<TSchema[], TSchema>> = T['returns']
 export type StaticContructorParameters<T extends readonly TSchema[], P extends unknown[]> = [...{ [K in keyof T]: T[K] extends TSchema ? Static<T[K], P> : never }]
@@ -178,7 +159,6 @@ export interface TConstructor<T extends TSchema[] = TSchema[], U extends TSchema
   parameters: T
   returns: U
 }
-
 // --------------------------------------------------------------------------
 // Date
 // --------------------------------------------------------------------------
@@ -188,14 +168,12 @@ export interface DateOptions extends SchemaOptions {
   maximumTimestamp?: number
   minimumTimestamp?: number
 }
-
 export interface TDate extends TSchema, DateOptions {
   [Kind]: 'Date'
   static: Date
   type: 'object'
   instanceOf: 'Date'
 }
-
 // --------------------------------------------------------------------------
 // Enum
 // --------------------------------------------------------------------------
@@ -203,7 +181,6 @@ export interface TEnumOption<T> {
   type: 'number' | 'string'
   const: T
 }
-
 export interface TEnum<T extends Record<string, string | number> = Record<string, string | number>> extends TSchema {
   [Kind]: 'Union'
   static: T[keyof T]
@@ -212,23 +189,19 @@ export interface TEnum<T extends Record<string, string | number> = Record<string
 // ------------------------------------------------------------------------
 // Extends
 // ------------------------------------------------------------------------
-
 export type TExtends<L extends TSchema, R extends TSchema, T extends TSchema, U extends TSchema> = Static<L> extends Static<R> ? T : U
-
 // ------------------------------------------------------------------------
 // Exclude
 // ------------------------------------------------------------------------
 export interface TExclude<T extends TUnion, U extends TUnion> extends TUnion<any[]> {
   static: Exclude<Static<T, this['params']>, Static<U, this['params']>>
 }
-
 // ------------------------------------------------------------------------
 // Extract
 // ------------------------------------------------------------------------
 export interface TExtract<T extends TSchema, U extends TUnion> extends TUnion<any[]> {
   static: Extract<Static<T, this['params']>, Static<U, this['params']>>
 }
-
 // --------------------------------------------------------------------------
 // Function
 // --------------------------------------------------------------------------
@@ -257,28 +230,21 @@ export interface TInteger extends TSchema, NumericOptions {
 // --------------------------------------------------------------------------
 // Intersect
 // --------------------------------------------------------------------------
-
 export type IntersectReduce<I extends unknown, T extends readonly any[]> = T extends [infer A, ...infer B] ? IntersectReduce<I & A, B> : I extends object ? I : {}
-
 // note: rename to IntersectStatic<T, P> in next minor release
 export type IntersectEvaluate<T extends readonly TSchema[], P extends unknown[]> = { [K in keyof T]: T[K] extends TSchema ? Static<T[K], P> : never }
-
 export type IntersectProperties<T extends readonly TObject[]> = {
   [K in keyof T]: T[K] extends TObject<infer P> ? P : {}
 }
-
 export interface IntersectOptions extends SchemaOptions {
   unevaluatedProperties?: boolean
 }
-
-type IntersectStatic<T extends TSchema[], P extends unknown[]> = TupleToIntersect<{ [K in keyof T]: Static<Assert<T[K], TSchema>, P> }>
-
+export type IntersectStatic<T extends TSchema[], P extends unknown[]> = TupleToIntersect<{ [K in keyof T]: Static<Assert<T[K], TSchema>, P> }>
 export interface TIntersect<T extends TSchema[] = TSchema[]> extends TSchema, IntersectOptions {
   [Kind]: 'Intersect'
   static: IntersectStatic<T, this['params']>
   allOf: [...T]
 }
-
 // -------------------------------------------------------------------------
 // KeyOf
 // -------------------------------------------------------------------------
@@ -286,7 +252,6 @@ export interface TIntersect<T extends TSchema[] = TSchema[]> extends TSchema, In
 export type TKeyOfTuple<T extends TSchema> = { 
   [K in keyof Static<T>]: TLiteral<Assert<K, TLiteralValue>> 
 } extends infer U ? UnionToTuple<{ [K in keyof U]: U[K] }[keyof U]> : never
-
 // prettier-ignore
 export type TKeyOf<T extends TSchema = TSchema> = (
   T extends TIntersect ? TKeyOfTuple<T> :
@@ -294,70 +259,55 @@ export type TKeyOf<T extends TSchema = TSchema> = (
   T extends TObject    ? TKeyOfTuple<T> :
   []
 ) extends infer R ? R extends [] ? TNever : TUnion<Assert<R, TSchema[]>> : never
-
 // --------------------------------------------------------------------------
 // Literal
 // --------------------------------------------------------------------------
-
 export type TLiteralValue = string | number | boolean
-
 export interface TLiteral<T extends TLiteralValue = TLiteralValue> extends TSchema {
   [Kind]: 'Literal'
   static: T
   const: T
 }
-
 // --------------------------------------------------------------------------
 // Never
 // --------------------------------------------------------------------------
-
 export interface TNever extends TSchema {
   [Kind]: 'Never'
   static: never
   allOf: [{ type: 'boolean'; const: false }, { type: 'boolean'; const: true }]
 }
-
 // --------------------------------------------------------------------------
 // Not
 // --------------------------------------------------------------------------
-
 export type StaticNot<L, R = unknown> = unknown extends R ? unknown : L extends R ? R : any // universal type
-
 export interface TNot<Not extends TSchema = TSchema, T extends TSchema = TSchema> extends TSchema {
   [Kind]: 'Not'
   static: StaticNot<Static<Not>, Static<T>>
   allOf: [{ not: Not }, T]
 }
-
 // --------------------------------------------------------------------------
 // Null
 // --------------------------------------------------------------------------
-
 export interface TNull extends TSchema {
   [Kind]: 'Null'
   static: null
   type: 'null'
 }
-
 // --------------------------------------------------------------------------
 // Number
 // --------------------------------------------------------------------------
-
 export interface TNumber extends TSchema, NumericOptions {
   [Kind]: 'Number'
   static: number
   type: 'number'
 }
-
 // --------------------------------------------------------------------------
 // Object
 // --------------------------------------------------------------------------
-
 export type ReadonlyOptionalPropertyKeys<T extends TProperties> = { [K in keyof T]: T[K] extends TReadonlyOptional<TSchema> ? K : never }[keyof T]
 export type ReadonlyPropertyKeys<T extends TProperties> = { [K in keyof T]: T[K] extends TReadonly<TSchema> ? K : never }[keyof T]
 export type OptionalPropertyKeys<T extends TProperties> = { [K in keyof T]: T[K] extends TOptional<TSchema> ? K : never }[keyof T]
 export type RequiredPropertyKeys<T extends TProperties> = keyof Omit<T, ReadonlyOptionalPropertyKeys<T> | ReadonlyPropertyKeys<T> | OptionalPropertyKeys<T>>
-
 // prettier-ignore
 export type PropertiesReducer<T extends TProperties, R extends Record<keyof any, unknown>> = (
   Readonly<Partial<Pick<R, ReadonlyOptionalPropertyKeys<T>>>> &
@@ -365,28 +315,21 @@ export type PropertiesReducer<T extends TProperties, R extends Record<keyof any,
   Partial<Pick<R, OptionalPropertyKeys<T>>> &
   Required<Pick<R, RequiredPropertyKeys<T>>>
 ) extends infer O ? { [K in keyof O]: O[K] } : never
-
 // prettier-ignore
 export type PropertiesReduce<T extends TProperties, P extends unknown[]> = PropertiesReducer<T, {
   [K in keyof T]: Static<T[K], P>
 }>
 
 export type TRecordProperties<K extends TUnion<TLiteral[]>, T extends TSchema> = Static<K> extends string ? { [X in Static<K>]: T } : never
-
 export type TProperties = Record<keyof any, TSchema>
-
 export type ObjectProperties<T> = T extends TObject<infer U> ? U : never
-
 export type ObjectPropertyKeys<T> = T extends TObject<infer U> ? keyof U : never
-
 export type TAdditionalProperties = undefined | TSchema | boolean
-
 export interface ObjectOptions extends SchemaOptions {
   additionalProperties?: TAdditionalProperties
   minProperties?: number
   maxProperties?: number
 }
-
 export interface TObject<T extends TProperties = TProperties> extends TSchema, ObjectOptions {
   [Kind]: 'Object'
   static: PropertiesReduce<T, this['params']>
@@ -395,25 +338,21 @@ export interface TObject<T extends TProperties = TProperties> extends TSchema, O
   properties: T
   required?: string[]
 }
-
 // -------------------------------------------------------------------------------------
 // Omit
 // -------------------------------------------------------------------------------------
 export type TOmitArray<T extends TSchema[], K extends keyof any> = Assert<{ [K2 in keyof T]: TOmit<Assert<T[K2], TSchema>, K> }, TSchema[]>
 export type TOmitProperties<T extends TProperties, K extends keyof any> = Evaluate<Assert<Omit<T, K>, TProperties>>
-
 // prettier-ignore
 export type TOmit<T extends TSchema, K extends keyof any> = 
   T extends TIntersect<infer S> ? TIntersect<TOmitArray<S, K>> : 
   T extends TUnion<infer S> ? TUnion<TOmitArray<S, K>> : 
   T extends TObject<infer S> ? TObject<TOmitProperties<S, K>> : 
   T
-
 // --------------------------------------------------------------------------
 // Partial
 // --------------------------------------------------------------------------
 export type TPartialArray<T extends TSchema[]> = Assert<{ [K in keyof T]: TPartial<Assert<T[K], TSchema>> }, TSchema[]>
-
 // prettier-ignore
 export type TPartialProperties<T extends TProperties> = Evaluate<Assert<{
   [K in keyof T]: 
@@ -422,31 +361,26 @@ export type TPartialProperties<T extends TProperties> = Evaluate<Assert<{
     T[K] extends TOptional<infer U>         ? TOptional<U>         : 
     TOptional<T[K]>
 }, TProperties>>
-
 // prettier-ignore
 export type TPartial<T extends TSchema> = 
   T extends TIntersect<infer S> ? TIntersect<TPartialArray<S>> : 
   T extends TUnion<infer S>     ? TUnion<TPartialArray<S>> : 
   T extends TObject<infer S>    ? TObject<TPartialProperties<S>> : 
   T
-
 // -------------------------------------------------------------------------------------
 // Pick
 // -------------------------------------------------------------------------------------
 export type TPickArray<T extends TSchema[], K extends keyof any> = Assert<{ [K2 in keyof T]: TPick<Assert<T[K2], TSchema>, K> }, TSchema[]>
 export type TPickProperties<T extends TProperties, K extends keyof any> = Evaluate<Assert<Pick<T, K>, TProperties>>
-
 // prettier-ignore
 export type TPick<T extends TSchema, K extends keyof any> = 
   T extends TIntersect<infer S> ? TIntersect<TPickArray<S, K>> : 
   T extends TUnion<infer S>     ? TUnion<TPickArray<S, K>> : 
   T extends TObject<infer S>    ? TObject<TPickProperties<S, K>> : 
   T
-
 // --------------------------------------------------------------------------
 // Promise
 // --------------------------------------------------------------------------
-
 export interface TPromise<T extends TSchema = TSchema> extends TSchema {
   [Kind]: 'Promise'
   static: Promise<Static<T, this['params']>>
@@ -454,13 +388,10 @@ export interface TPromise<T extends TSchema = TSchema> extends TSchema {
   instanceOf: 'Promise'
   item: TSchema
 }
-
 // --------------------------------------------------------------------------
 // Record
 // --------------------------------------------------------------------------
-
 export type TRecordKey = TString | TNumeric | TUnion<TLiteral<any>[]>
-
 export interface TRecord<K extends TRecordKey = TRecordKey, T extends TSchema = TSchema> extends TSchema {
   [Kind]: 'Record'
   static: Record<Static<K>, Static<T, this['params']>>
@@ -468,38 +399,30 @@ export interface TRecord<K extends TRecordKey = TRecordKey, T extends TSchema = 
   patternProperties: { [pattern: string]: T }
   additionalProperties: false
 }
-
 // --------------------------------------------------------------------------
 // Recursive
 // --------------------------------------------------------------------------
-
 export interface TSelf extends TSchema {
   [Kind]: 'Self'
   static: this['params'][0]
   $ref: string
 }
-
 export type TRecursiveReduce<T extends TSchema> = Static<T, [TRecursiveReduce<T>]>
-
 export interface TRecursive<T extends TSchema> extends TSchema {
   static: TRecursiveReduce<T>
 }
-
 // --------------------------------------------------------------------------
 // Ref
 // --------------------------------------------------------------------------
-
 export interface TRef<T extends TSchema = TSchema> extends TSchema {
   [Kind]: 'Ref'
   static: Static<T, this['params']>
   $ref: string
 }
-
 // -------------------------------------------------------------------------
 // Required
 // -------------------------------------------------------------------------
 export type TRequiredArray<T extends TSchema[]> = Assert<{ [K in keyof T]: TRequired<Assert<T[K], TSchema>> }, TSchema[]>
-
 // prettier-ignore
 export type TRequiredProperties<T extends TProperties> = Evaluate<Assert<{
   [K in keyof T]: 
@@ -508,18 +431,15 @@ export type TRequiredProperties<T extends TProperties> = Evaluate<Assert<{
     T[K] extends TOptional<infer U>         ? U : 
     T[K]
 }, TProperties>>
-
 // prettier-ignore
 export type TRequired<T extends TSchema> = 
   T extends TIntersect<infer S> ? TIntersect<TRequiredArray<S>> : 
   T extends TUnion<infer S>     ? TUnion<TRequiredArray<S>> : 
   T extends TObject<infer S>    ? TObject<TRequiredProperties<S>> : 
   T
-
 // --------------------------------------------------------------------------
 // String
 // --------------------------------------------------------------------------
-
 export type StringFormatOption =
   | 'date-time'
   | 'time'
@@ -539,7 +459,6 @@ export type StringFormatOption =
   | 'json-pointer'
   | 'relative-json-pointer'
   | 'regex'
-
 export interface StringOptions<Format extends string> extends SchemaOptions {
   minLength?: number
   maxLength?: number
@@ -548,19 +467,15 @@ export interface StringOptions<Format extends string> extends SchemaOptions {
   contentEncoding?: '7bit' | '8bit' | 'binary' | 'quoted-printable' | 'base64'
   contentMediaType?: string
 }
-
 export interface TString<Format extends string = string> extends TSchema, StringOptions<Format> {
   [Kind]: 'String'
   static: string
   type: 'string'
 }
-
 // --------------------------------------------------------------------------
 // Symbol
 // --------------------------------------------------------------------------
-
 export type SymbolValue = string | number | undefined
-
 export interface TSymbol<Value extends SymbolValue = SymbolValue> extends TSchema, SchemaOptions {
   [Kind]: 'Symbol'
   static: symbol
@@ -569,9 +484,7 @@ export interface TSymbol<Value extends SymbolValue = SymbolValue> extends TSchem
 // --------------------------------------------------------------------------
 // Tuple
 // --------------------------------------------------------------------------
-
 export type TupleToArray<T extends TTuple<TSchema[]>> = T extends TTuple<infer R> ? R : never
-
 export interface TTuple<T extends TSchema[] = TSchema[]> extends TSchema {
   [Kind]: 'Tuple'
   static: { [K in keyof T]: T[K] extends TSchema ? Static<T[K], this['params']> : T[K] }
@@ -581,84 +494,67 @@ export interface TTuple<T extends TSchema[] = TSchema[]> extends TSchema {
   minItems: number
   maxItems: number
 }
-
 // --------------------------------------------------------------------------
 // Undefined
 // --------------------------------------------------------------------------
-
 export interface TUndefined extends TSchema {
   [Kind]: 'Undefined'
   static: undefined
   type: 'null'
   typeOf: 'Undefined'
 }
-
 // --------------------------------------------------------------------------
 // Union
 // --------------------------------------------------------------------------
-
 export interface TUnion<T extends TSchema[] = TSchema[]> extends TSchema {
   [Kind]: 'Union'
   static: { [K in keyof T]: T[K] extends TSchema ? Static<T[K], this['params']> : never }[number]
   anyOf: T
 }
-
 // -------------------------------------------------------------------------
 // Uint8Array
 // -------------------------------------------------------------------------
-
 export interface Uint8ArrayOptions extends SchemaOptions {
   maxByteLength?: number
   minByteLength?: number
 }
-
 export interface TUint8Array extends TSchema, Uint8ArrayOptions {
   [Kind]: 'Uint8Array'
   static: Uint8Array
   instanceOf: 'Uint8Array'
   type: 'object'
 }
-
 // --------------------------------------------------------------------------
 // Unknown
 // --------------------------------------------------------------------------
-
 export interface TUnknown extends TSchema {
   [Kind]: 'Unknown'
   static: unknown
 }
-
 // --------------------------------------------------------------------------
 // Unsafe
 // --------------------------------------------------------------------------
-
 export interface UnsafeOptions extends SchemaOptions {
   [Kind]?: string
 }
-
 export interface TUnsafe<T> extends TSchema {
   [Kind]: string
   static: T
 }
-
 // --------------------------------------------------------------------------
 // Void
 // --------------------------------------------------------------------------
-
 export interface TVoid extends TSchema {
   [Kind]: 'Void'
   static: void
   type: 'null'
   typeOf: 'Void'
 }
-
 // --------------------------------------------------------------------------
 // Static<T>
 // --------------------------------------------------------------------------
-
 /** Creates a static type from a TypeBox type */
 export type Static<T extends TSchema, P extends unknown[] = []> = (T & { params: P })['static']
-
 // --------------------------------------------------------------------------
 // TypeGuard
 // --------------------------------------------------------------------------
