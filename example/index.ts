@@ -17,12 +17,19 @@ import { Type, Static, TypeGuard, TypeUtility, KeyOf, TPromise } from '@sinclair
 import { Value } from '@sinclair/typebox/value'
 import * as Types from '@sinclair/typebox'
 
-type TT = { x: number } | { x: number } | { z: number }
+const T = Type.Union([
+  Type.Object({
+    x: Type.Number(),
+    y: Type.Number(),
+    z: Type.Number(),
+  }),
+  Type.Object({
+    x: Type.Number(),
+    y: Type.Number(),
+    z: Type.Number(),
+  }),
+])
 
+const O = TypeUtility.Omit(T, ['x'])
 
-const X = TypeUtility.Required(TypeUtility.Partial(Type.Union([
-    Type.Intersect([
-        Type.Object({ x: Type.Readonly(Type.Number()) }),
-        Type.Object({ x: Type.String() })
-    ])
-])))
+type T = Static<typeof O>

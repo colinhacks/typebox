@@ -30,6 +30,38 @@ import { ValueClone } from '../value/clone'
 import { TypeGuard } from './guard'
 import * as Types from './type'
 
+// -------------------------------------------------------------------------------------
+// Helpers
+// -------------------------------------------------------------------------------------
+export type Evaluate<T> = T extends infer O ? { [K in keyof O]: O[K] } : never
+export type Assert<T, E> = T extends E ? T : never
+
+// -------------------------------------------------------------------------------------
+// Omit
+// -------------------------------------------------------------------------------------
+export type TOmitArray<T extends Types.TSchema[], K extends keyof any> = Assert<{ [K2 in keyof T]: TOmit2<T[K2], K> }, Types.TSchema[]>
+export type TOmitObject<T extends Types.TProperties, K extends keyof any> = Evaluate<Assert<Omit<T, K>, Types.TProperties>>
+export type TOmit2<T extends Types.TSchema, K extends keyof any> = T extends Types.TIntersect<infer S>
+  ? Types.TIntersect<TOmitArray<S, K>>
+  : T extends Types.TUnion<infer S>
+  ? Types.TUnion<TOmitArray<S, K>>
+  : T extends Types.TObject<infer S>
+  ? Types.TObject<TOmitObject<S, K>>
+  : T
+
+// -------------------------------------------------------------------------------------
+// Pick
+// -------------------------------------------------------------------------------------
+export type TPickArray<T extends Types.TSchema[], K extends keyof any> = Assert<{ [K2 in keyof T]: TPick2<T[K2], K> }, Types.TSchema[]>
+export type TPickObject<T extends Types.TProperties, K extends keyof any> = Evaluate<Assert<Pick<T, K>, Types.TProperties>>
+export type TPick2<T extends Types.TSchema, K extends keyof any> = T extends Types.TIntersect<infer S>
+  ? Types.TIntersect<TPickArray<S, K>>
+  : T extends Types.TUnion<infer S>
+  ? Types.TUnion<TPickArray<S, K>>
+  : T extends Types.TObject<infer S>
+  ? Types.TObject<TPickObject<S, K>>
+  : T
+
 // -------------------------------------------------------------------------
 // TPartial
 // -------------------------------------------------------------------------
@@ -127,11 +159,11 @@ export namespace TypeUtility {
   export function Required<T extends Types.TSchema>(schema: T): TRequired2<T> {
     return Map(schema, (object) => Types.Type.Required(object)) as TRequired2<T>
   }
-  export function Omit(schema: Types.TSchema, keys: string[]): Types.TSchema {
-    return Map(schema, (object) => Types.Type.Omit(object, keys))
+  export function Omit<T extends Types.TSchema, K extends (keyof Types.Static<T>)[]>(schema: T, keys: readonly [...K]): TOmit2<T, K[number]> {
+    return Map(schema, (object) => Types.Type.Omit(object, keys)) as TOmit2<T, K[number]>
   }
-  export function Pick(schema: Types.TSchema, keys: string[]): Types.TSchema {
-    return Map(schema, (object) => Types.Type.Pick(object, keys))
+  export function Pick<T extends Types.TSchema, K extends (keyof Types.Static<T>)[]>(schema: T, keys: readonly [...K]): TPick2<T, K[number]> {
+    return Map(schema, (object) => Types.Type.Pick(object, keys)) as TPick2<T, K[number]>
   }
 }
 // --------------------------------------------------------------------
