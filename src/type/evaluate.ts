@@ -40,96 +40,69 @@ export type Assert<T, E> = T extends E ? T : never
 // Omit
 // -------------------------------------------------------------------------------------
 export type TOmitArray<T extends Types.TSchema[], K extends keyof any> = Assert<{ [K2 in keyof T]: TOmit2<T[K2], K> }, Types.TSchema[]>
-export type TOmitObject<T extends Types.TProperties, K extends keyof any> = Evaluate<Assert<Omit<T, K>, Types.TProperties>>
-export type TOmit2<T extends Types.TSchema, K extends keyof any> = T extends Types.TIntersect<infer S>
-  ? Types.TIntersect<TOmitArray<S, K>>
-  : T extends Types.TUnion<infer S>
-  ? Types.TUnion<TOmitArray<S, K>>
-  : T extends Types.TObject<infer S>
-  ? Types.TObject<TOmitObject<S, K>>
-  : T
+export type TOmitProperties<T extends Types.TProperties, K extends keyof any> = Evaluate<Assert<Omit<T, K>, Types.TProperties>>
+
+// prettier-ignore
+export type TOmit2<T extends Types.TSchema, K extends keyof any> = 
+  T extends Types.TIntersect<infer S> ? Types.TIntersect<TOmitArray<S, K>> : 
+  T extends Types.TUnion<infer S> ? Types.TUnion<TOmitArray<S, K>> : 
+  T extends Types.TObject<infer S> ? Types.TObject<TOmitProperties<S, K>> : 
+  T
 
 // -------------------------------------------------------------------------------------
 // Pick
 // -------------------------------------------------------------------------------------
 export type TPickArray<T extends Types.TSchema[], K extends keyof any> = Assert<{ [K2 in keyof T]: TPick2<T[K2], K> }, Types.TSchema[]>
-export type TPickObject<T extends Types.TProperties, K extends keyof any> = Evaluate<Assert<Pick<T, K>, Types.TProperties>>
-export type TPick2<T extends Types.TSchema, K extends keyof any> = T extends Types.TIntersect<infer S>
-  ? Types.TIntersect<TPickArray<S, K>>
-  : T extends Types.TUnion<infer S>
-  ? Types.TUnion<TPickArray<S, K>>
-  : T extends Types.TObject<infer S>
-  ? Types.TObject<TPickObject<S, K>>
-  : T
+export type TPickProperties<T extends Types.TProperties, K extends keyof any> = Evaluate<Assert<Pick<T, K>, Types.TProperties>>
+
+// prettier-ignore
+export type TPick2<T extends Types.TSchema, K extends keyof any> = 
+  T extends Types.TIntersect<infer S> ? Types.TIntersect<TPickArray<S, K>> : 
+  T extends Types.TUnion<infer S>     ? Types.TUnion<TPickArray<S, K>> : 
+  T extends Types.TObject<infer S>    ? Types.TObject<TPickProperties<S, K>> : 
+  T
 
 // -------------------------------------------------------------------------
 // TPartial
 // -------------------------------------------------------------------------
-export type TPartialIntersect<T extends Types.TSchema[]> = {
-  [K in keyof T]: TPartial2<T[K]> extends infer S ? (S extends Types.TSchema ? S : never) : never
-} extends infer O
-  ? O extends Types.TSchema[]
-    ? Types.TIntersect<O>
-    : never
-  : never
+export type TPartialArray<T extends Types.TSchema[]> = Assert<{ [K in keyof T]: TPartial2<T[K]> }, Types.TSchema[]>
 
-export type TPartialUnion<T extends Types.TSchema[]> = {
-  [K in keyof T]: TPartial2<T[K]> extends infer S ? (S extends Types.TSchema ? S : never) : never
-} extends infer O
-  ? O extends Types.TSchema[]
-    ? Types.TUnion<O>
-    : never
-  : never
+// prettier-ignore
+export type TPartialProperties<T extends Types.TProperties> = Evaluate<Assert<{
+  [K in keyof T]: 
+    T[K] extends Types.TReadonlyOptional<infer U> ? Types.TReadonlyOptional<U> : 
+    T[K] extends Types.TReadonly<infer U>         ? Types.TReadonlyOptional<U> : 
+    T[K] extends Types.TOptional<infer U>         ? Types.TOptional<U>         : 
+    Types.TOptional<T[K]>
+}, Types.TProperties>>
 
-export type TPartialObject<T extends Types.TObject> = {
-  [K in keyof T['properties']]: T['properties'][K] extends Types.TReadonlyOptional<infer U>
-    ? Types.TReadonlyOptional<U>
-    : T['properties'][K] extends Types.TReadonly<infer U>
-    ? Types.TReadonlyOptional<U>
-    : T['properties'][K] extends Types.TOptional<infer U>
-    ? Types.TOptional<U>
-    : Types.TOptional<T['properties'][K]>
-} extends infer Properties
-  ? Properties extends Types.TProperties
-    ? Types.TObject<Properties>
-    : never
-  : never
+// prettier-ignore
+export type TPartial2<T extends Types.TSchema> = 
+  T extends Types.TIntersect<infer S> ? Types.TIntersect<TPartialArray<S>> : 
+  T extends Types.TUnion<infer S>     ? Types.TUnion<TPartialArray<S>> : 
+  T extends Types.TObject<infer S>    ? Types.TObject<TPartialProperties<S>> : 
+  T
 
-export type TPartial2<T extends Types.TSchema> = T extends Types.TIntersect<infer S> ? TPartialIntersect<S> : T extends Types.TUnion<infer S> ? TPartialUnion<S> : T extends Types.TObject ? TPartialObject<T> : T
 // -------------------------------------------------------------------------
 // TRequired
 // -------------------------------------------------------------------------
-export type TRequiredIntersect<T extends Types.TSchema[]> = {
-  [K in keyof T]: TRequired2<T[K]> extends infer S ? (S extends Types.TSchema ? S : never) : never
-} extends infer O
-  ? O extends Types.TSchema[]
-    ? Types.TIntersect<O>
-    : never
-  : never
+export type TRequiredArray<T extends Types.TSchema[]> = Assert<{ [K in keyof T]: TRequired2<T[K]> }, Types.TSchema[]>
 
-export type TRequiredUnion<T extends Types.TSchema[]> = {
-  [K in keyof T]: TRequired2<T[K]> extends infer S ? (S extends Types.TSchema ? S : never) : never
-} extends infer O
-  ? O extends Types.TSchema[]
-    ? Types.TUnion<O>
-    : never
-  : never
+// prettier-ignore
+export type TRequiredProperties<T extends Types.TProperties> = Evaluate<Assert<{
+  [K in keyof T]: 
+    T[K] extends Types.TReadonlyOptional<infer U> ? Types.TReadonly<U> : 
+    T[K] extends Types.TReadonly<infer U>         ? Types.TReadonly<U> :  
+    T[K] extends Types.TOptional<infer U>         ? U : 
+    T[K]
+}, Types.TProperties>>
 
-export type TRequiredObject<T extends Types.TObject> = {
-  [K in keyof T['properties']]: T['properties'][K] extends Types.TReadonlyOptional<infer U>
-    ? Types.TReadonly<U>
-    : T['properties'][K] extends Types.TReadonly<infer U>
-    ? Types.TReadonly<U>
-    : T['properties'][K] extends Types.TOptional<infer U>
-    ? U
-    : T['properties'][K]
-} extends infer Properties
-  ? Properties extends Types.TProperties
-    ? Types.TObject<Properties>
-    : never
-  : never
-
-export type TRequired2<T extends Types.TSchema> = T extends Types.TIntersect<infer S> ? TRequiredIntersect<S> : T extends Types.TUnion<infer S> ? TRequiredUnion<S> : T extends Types.TObject ? TRequiredObject<T> : T
+// prettier-ignore
+export type TRequired2<T extends Types.TSchema> = 
+  T extends Types.TIntersect<infer S> ? Types.TIntersect<TRequiredArray<S>> : 
+  T extends Types.TUnion<infer S>     ? Types.TUnion<TRequiredArray<S>> : 
+  T extends Types.TObject<infer S>    ? Types.TObject<TRequiredProperties<S>> : 
+  T
 
 // --------------------------------------------------------------------
 // TypeUtility

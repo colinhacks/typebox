@@ -17,19 +17,14 @@ import { Type, Static, TypeGuard, TypeUtility, KeyOf, TPromise } from '@sinclair
 import { Value } from '@sinclair/typebox/value'
 import * as Types from '@sinclair/typebox'
 
-const T = Type.Union([
+const T = Type.Intersect([
   Type.Object({
-    x: Type.Number(),
-    y: Type.Number(),
-    z: Type.Number(),
-  }),
-  Type.Object({
-    x: Type.Number(),
+    x: Type.Readonly(Type.Number()),
     y: Type.Number(),
     z: Type.Number(),
   }),
 ])
 
-const O = TypeUtility.Omit(T, ['x'])
+const O = TypeUtility.Partial(T)
 
 type T = Static<typeof O>
