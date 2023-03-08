@@ -16,34 +16,28 @@
 import { Type, Static, TypeGuard, TypeExtends, TypeExtendsResult } from '@sinclair/typebox'
 import * as Types from '@sinclair/typebox'
 
-// -------------------------------------------------------------
-// Symbol
-// -------------------------------------------------------------
-type T1 = symbol extends unknown ? true : false // true
-type T2 = symbol extends any ? true : false // true
-type T3 = string extends never ? true : false // false
-type T4 = symbol extends string ? true : false // false
-type T5 = symbol extends boolean ? true : false // false
-type T6 = symbol extends number ? true : false // false
-type T7 = symbol extends {} ? true : false // true
-type T8 = symbol extends [] ? true : false // false
+const T = Type.Object({
+  x: Type.Number(),
+  y: Type.Number(),
+  z: Type.Number(),
+})
 
-type S1 = unknown extends symbol ? true : false // false
-type S2 = any extends symbol ? true : false // union
-type S3 = never extends symbol ? true : false // true
-type S4 = string extends symbol ? true : false // false
-type S5 = boolean extends symbol ? true : false // false
-type S6 = number extends symbol ? true : false // false
-type S7 = {} extends symbol ? true : false // false
-type S8 = [] extends symbol ? true : false // false
+const N = Type.Recursive(
+  (Node) =>
+    Type.Partial(
+      Type.Intersect([
+        T,
+        Type.Object({
+          id: Type.String(),
+          nodes: Type.Array(Node),
+        }),
+      ]),
+    ),
+  {
+    $id: 'Node',
+  },
+)
 
-const R = TypeExtends.Extends(Type.Array(Type.Number()), Type.Symbol(undefined))
+console.log(JSON.stringify(N, null, 2))
 
-type X = symbol extends { description: string | undefined } ? true : false
-
-const AASD = Symbol()
-AASD.description
-
-type AA = keyof symbol
-
-console.log(TypeExtendsResult[R])
+function test(value: Static<typeof N>) {}
