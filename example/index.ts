@@ -13,9 +13,15 @@
 // import { TypeGuard } from 'src/guard/guard'
 // import { Value } from '@sinclair/typebox/value'
 
-import { Type, Static, TypeGuard, TypeUtility, KeyOfUtility, TPromise } from '@sinclair/typebox'
+import { Type, Static, TypeGuard, TypeMap, KeyResolver, TPromise } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
 import * as Types from '@sinclair/typebox'
+
+// -------------------------------------------------------------------------------------
+// Helpers
+// -------------------------------------------------------------------------------------
+export type Evaluate<T> = T extends infer O ? { [K in keyof O]: O[K] } : never
+export type Assert<T, E> = T extends E ? T : never
 
 const T = Type.Intersect([
   Type.Object({
@@ -24,13 +30,11 @@ const T = Type.Intersect([
     z: Type.Number(),
   }),
   Type.Object({
-    a: Type.Number(),
+    a: Type.String(),
     b: Type.Number(),
     c: Type.Number(),
   }),
-  Type.String(),
 ])
 
-const K = KeyOfUtility.Evaluate(T)
-
+const K = KeyResolver.KeyOf(T)
 console.log(K)

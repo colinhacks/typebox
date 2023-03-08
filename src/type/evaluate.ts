@@ -107,9 +107,18 @@ export type TRequired2<T extends Types.TSchema> =
 // -------------------------------------------------------------------------
 // TKeyOf
 // -------------------------------------------------------------------------
-export type KeyOfTupleOfLiterals<T extends Types.TSchema> = { [K in keyof Types.Static<T>]: Types.TLiteral<Assert<K, Types.TLiteralValue>> } extends infer U ? Types.UnionToTuple<{ [K in keyof U]: U[K] }[keyof U]> : never
+// prettier-ignore
+export type KeyOfTuple<T extends Types.TSchema> = { 
+  [K in keyof Types.Static<T>]: Types.TLiteral<Assert<K, Types.TLiteralValue>> 
+} extends infer U ? Types.UnionToTuple<{ [K in keyof U]: U[K] }[keyof U]> : never
 
-export type TKeyOf2<T extends Types.TSchema> = KeyOfTupleOfLiterals<T> extends infer Literals ? (Literals extends [] ? Types.TNever : Types.TUnion<Assert<Literals, Types.TSchema[]>>) : never
+// prettier-ignore
+export type TKeyOf2<T extends Types.TSchema> = (
+  T extends Types.TIntersect ? KeyOfTuple<T> :
+  T extends Types.TUnion     ? KeyOfTuple<T> :
+  T extends Types.TObject    ? KeyOfTuple<T> :
+  []
+) extends infer R ? R extends [] ? Types.TNever : Types.TUnion<Assert<R, Types.TSchema[]>> : never
 
 // --------------------------------------------------------------------
 // ObjectMap
@@ -134,10 +143,11 @@ export namespace ObjectMap {
     return Visit(ValueClone.Clone(schema), callback)
   }
 }
+
 // --------------------------------------------------------------------
 // ObjectMap
 // --------------------------------------------------------------------
-export namespace TypeUtility {
+export namespace TypeMap {
   export function Partial<T extends Types.TSchema>(schema: T): TPartial2<T> {
     return ObjectMap.Map(schema, (object) => Types.Type.Partial(object)) as TPartial2<T>
   }
@@ -154,26 +164,13 @@ export namespace TypeUtility {
 // --------------------------------------------------------------------
 // KeyOf
 // --------------------------------------------------------------------
-export namespace KeyOfUtility {
+export namespace KeyResolver {
   function Intersect(schema: Types.TIntersect) {
-    const result = new Set<string>()
-    for (const inner of schema.allOf) {
-      for (const key of Visit(inner)) {
-        result.add(key)
-      }
-    }
-    return [...result]
+    return [...schema.allOf.reduce((set, schema) => Visit(schema).map((key) => set.add(key))[0], new Set<string>())]
   }
   function Union(schema: Types.TUnion) {
     const sets = schema.anyOf.map((inner) => Visit(inner))
-    const result = new Set<string>()
-    for (const set of sets) {
-      for (const key of set) {
-        if (!sets.every((set) => set.includes(key))) continue
-        result.add(key)
-      }
-    }
-    return [...result]
+    return [...sets.reduce((set, outer) => outer.map((key) => (sets.every((inner) => inner.includes(key)) ? set.add(key) : set))[0], new Set<string>())]
   }
   function Object(schema: Types.TObject) {
     return globalThis.Object.keys(schema.properties)
@@ -184,8 +181,7 @@ export namespace KeyOfUtility {
     if (TypeGuard.TObject(schema)) return Object(schema)
     return []
   }
-  export function Evaluate<T extends Types.TIntersect | Types.TUnion | Types.TObject>(schema: T): TKeyOf2<T> {
-    const keys = Visit(schema)
-    return Types.Type.Union(keys.map((key) => Types.Type.Literal(key))) as TKeyOf2<T>
+  export function KeyOf<T extends Types.TIntersect | Types.TUnion | Types.TObject>(schema: T) {
+    return Visit(schema)
   }
 }
